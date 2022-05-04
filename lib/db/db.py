@@ -1,5 +1,6 @@
 from os.path import isfile
 from sqlite3 import connect
+from apscheduler.triggers.cron import CronTrigger
 
 # Create/find .sql and .db files
 DB_PATH = "./data/db/userlevels.db"
@@ -19,6 +20,9 @@ def with_commit(func):
 def build():
 	if isfile(BUILD_PATH):
 		scriptexec(BUILD_PATH)
+
+def autosave(scheduler):
+	scheduler.add_job(commit, CronTrigger(second=0))
 
 def commit():
 	connection.commit()
