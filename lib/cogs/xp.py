@@ -82,7 +82,6 @@ class XP(Cog):
 		if new_lvl > lvl:
 			async with message.channel.typing():
 				if gotImgPerm == True:
-					pass
 					await message.channel.send('Congrats {}! You reached Level {}! You now have permission to post embed links and attach files!'.format(message.author.mention, new_lvl))
 				else:
 					await message.channel.send('Congrats {}! You reached Level {}!'.format(message.author.mention, new_lvl))

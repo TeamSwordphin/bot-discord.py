@@ -4,7 +4,7 @@ from glob import glob
 from ..db import db
 
 import discord
-from discord import Intents, Embed
+from discord import Intents
 from discord.ext.commands import Bot as BotBase
 from discord.ext.commands import Context
 from discord.ext.commands import CommandNotFound
