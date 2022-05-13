@@ -32,6 +32,7 @@ class Warn(Cog):
 				title = f"{member.name} has been given a strike!"
 				desc = warning
 				await ctx.send(embed=discord.Embed(title=title, description=desc, colour=0x5387b8))
+				await ctx.message.delete()
 
 	@command(name="strikes", aliases=["warnings", "warns", "getwarns", "getwarnings", "getstrikes"])
 	async def get_warnings(self, ctx, member: Member = None):
