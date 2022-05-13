@@ -77,15 +77,15 @@ class XP(Cog):
 		gotImgPerm = False
 		if new_lvl == 25:
 			gotImgPerm = True
-		#	await message.author.add_roles(get(self.bot.guild.roles, name="chat perms"))
+			await message.author.add_roles(get(self.bot.guild.roles, name="chat perms"))
 
 		if new_lvl > lvl:
 			async with message.channel.typing():
 				if gotImgPerm == True:
 					pass
-					#await message.channel.send('Congrats {}! You reached Level {}! You now have permission to post embed links and attach files!'.format(message.author.mention, new_lvl))
-				#else:
-				#	await message.channel.send('Congrats {}! You reached Level {}!'.format(message.author.mention, new_lvl))
+					await message.channel.send('Congrats {}! You reached Level {}! You now have permission to post embed links and attach files!'.format(message.author.mention, new_lvl))
+				else:
+					await message.channel.send('Congrats {}! You reached Level {}!'.format(message.author.mention, new_lvl))
 
 	async def display_level(self, message, target):
 		xp, lvl = db.record("SELECT XP, Level FROM exp WHERE UserID = ?", target.id) or (None, None)
