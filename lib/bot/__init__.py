@@ -11,7 +11,7 @@ from discord.ext.commands import CommandNotFound
 
 PREFIX = "!"
 OWNER_IDS = [105180779025334272]
-GUILD = 334163198976589837
+GUILD = 311200318895423499
 COGS = [path.split("/")[-1][:-3] for path in glob("./lib/cogs/*.py")]
 
 
@@ -78,35 +78,11 @@ class Bot(BotBase):
 		else:
 			raise exc
 
-	async def update_db(self):
-		# Create XP for existing users
-		db.multiexecute("INSERT OR IGNORE INTO exp (UserID) VALUES (?)",
-			((member.id,) for member in self.guild.members if not member.bot)
-		)
-
-		# Remove XP from left members
-		to_remove = []
-		stored_members = db.column("SELECT UserID FROM exp")
-		for id_ in stored_members:
-			if not self.guild.get_member(id_):
-				to_remove.append(id_)
-		db.multiexecute("DELETE FROM exp WHERE UserID = ?", ((id_,) for id_ in to_remove))
-		db.commit()
-
-	# Write to databases
-	async def on_member_join(self, member):
-		db.execute("INSERT INTO exp (UserID) VALUES (?)", member.id)
-
-	# Delete to databases
-	async def on_member_remove(self, member):
-		db.execute("DELETE FROM exp WHERE UserID = ?", member.id)
-
 	async def on_ready(self):
 		if not self.ready:
 			self.guild = self.get_guild(GUILD)
 			self.scheduler.start()
 
-			await self.update_db()
 			await self.change_presence(status=discord.Status.dnd, activity=discord.Game("with Sword!"))
 
 			while not self.ready_cogs.ready_all():

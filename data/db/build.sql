@@ -4,3 +4,7 @@ CREATE TABLE IF NOT EXISTS exp (
 	Level integer DEFAULT 0,
 	XPLock text DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS warnlog (
+	UserId integer,
+	Reason text
+);

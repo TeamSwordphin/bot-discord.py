@@ -1,26 +1,26 @@
 import cleverbot
 import random
-from random import randint
 
-from discord.ext.commands import Cog, command
+from discord.ext.commands import Cog
+from discord.utils import get
 
 
 REACTIONS = [
-	':TSPwhenlifegetsatred:597270319736291347',
-	':TSPvaleriSmug:585958568822571011',
-	':TSPvaleriShrug:613461305025626132',
-	':TSPvaleriPog:613439446800531463', 
-	':TSPshopkeepEZ:586372671646728193', 
-	':TSPredREEgif:597273299449544705',
-	':TSPredAYAYA:585953483744608256',
-	':TSPphinYes:590373864194965505',
-	':TSPphinNo:590371307850432517',
-	':TSPnatsukoWowgif:612058636986089526',
-	':TSPnatsukoCry:586327903340331068',
-	':TSPlilahLewd:585661944367808522',
-	':TSPdarwinWeird:613457203491242024', 
-	':TSPdarwinS:613460365732347911',
-	':TSPalburnPinged:586724160244285440'
+	597270319736291347,
+	585958568822571011,
+	613461305025626132,
+	613439446800531463, 
+	586372671646728193, 
+	597273299449544705,
+	585953483744608256,
+	590373864194965505,
+	590371307850432517,
+	612058636986089526,
+	586327903340331068,
+	585661944367808522,
+	613457203491242024, 
+	613460365732347911,
+	586724160244285440
 ]
 
 class Cleverbot(Cog):
@@ -55,7 +55,9 @@ class Cleverbot(Cog):
 							self.conversation.close()
 				else:
 					randomReaction = random.choice(REACTIONS)
-					await message.add_reaction(randomReaction)
+					emoji = self.bot.get_emoji(randomReaction)
+					if emoji:
+						await message.add_reaction(emoji)
 
 def setup(bot):
 	bot.add_cog(Cleverbot(bot))
