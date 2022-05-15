@@ -1,4 +1,4 @@
-from discord.ext.commands import Cog, command
+from discord.ext.commands import Cog
 from discord.utils import get
 
 class RoleAssign(Cog):
