@@ -8,3 +8,7 @@ CREATE TABLE IF NOT EXISTS warnlog (
 	UserId integer,
 	Reason text
 );
+CREATE TABLE IF NOT EXISTS robloxverification (
+	UserId integer,
+	RobloxProfileLink text
+);

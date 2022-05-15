@@ -1,10 +1,12 @@
 import requests
+from ..db import db
 
 import discord
+from discord import Member
 from discord.utils import get
 from discord.ext.commands import Cog, command
 
-TEXT_CHANNELS_TO_SEND = [734172216299880480]
+TEXT_CHANNELS_TO_SEND = [734172216299880480, 410596271057797131]
 SWORD_FISH_CLUB_ID = 3451727
 
 def can_send_in_channel(channelID):
@@ -42,7 +44,8 @@ class Verification(Cog):
 									if groupId == SWORD_FISH_CLUB_ID:
 										inGroup = True
 
-						await ctx.author.edit(nick=json.get("name"))
+						db.execute("UPDATE robloxverification SET RobloxProfileLink = ? WHERE UserID = ?", userid, ctx.author.id)
+						db.commit()
 
 						if inGroup:
 							await ctx.author.add_roles(get(self.bot.guild.roles, name="Swordfish Club"))
@@ -52,7 +55,8 @@ class Verification(Cog):
 							print("NOT IN THE CLUB ROLE!!")
 
 						bot_channel = await self.bot.fetch_channel(410596271057797131)
-						await bot_channel.send(f"{ctx.author.name} was verified from Roblox User ID {userid}")
+						await ctx.author.edit(nick=json.get("name"))
+						await bot_channel.send(f"{ctx.author.mention} was verified from Roblox User ID {userid}")
 
 					else:
 						await ctx.send(f"Found your Roblox Profile {ctx.author.mention}! Please follow the instructions below to continue verification:")
@@ -86,9 +90,24 @@ class Verification(Cog):
 				embedObj.set_image(url="https://i.imgur.com/81H6jxP.png")
 				await ctx.send(embed=embedObj)
 
+	@command(name="verifyProfile")
+	async def verify_roblox_profile(self, ctx, member: Member = None):
+		link = None
+		if member != None:
+			link = db.record("SELECT RobloxProfileLink FROM robloxverification WHERE UserID = ?", member.id)
+		else:
+			link = db.record("SELECT RobloxProfileLink FROM robloxverification WHERE UserID = ?", ctx.author.id)
+			
+		if link != None:
+			id = ''.join(link)
+			await ctx.send(f"https://www.roblox.com/users/{id}/profile")
+		else:
+			await ctx.send("This user's Roblox Profile was not found.")
+
 	# Ping the user for verification instructions
 	@Cog.listener()
 	async def on_member_join(self, member):
+		db.execute("INSERT INTO robloxverification (UserID) VALUES (?)", member.id)
 		verification_channel = await self.bot.fetch_channel(734172216299880480)
 		await verification_channel.send(f"{member.mention} Welcome to the Official Team Swordphin Discord!")
 		description = """There are 2 ways to verify yourself. Please choose the most convenient:
@@ -103,6 +122,11 @@ class Verification(Cog):
 
 		embedObj = discord.Embed(title = "How to Verify Yourself", description = description, colour = 0x5387b8)
 		await verification_channel.send(embed=embedObj)
+
+	# Delete to databases
+	@Cog.listener()
+	async def on_member_remove(self, member):
+		db.execute("DELETE FROM robloxverification WHERE UserID = ?", member.id)
 
 	@Cog.listener()
 	async def on_ready(self):
