@@ -27,7 +27,7 @@ class Verification(Cog):
 		if can_send_in_channel(ctx.channel.id):
 			if userid != None:
 				json = await self.get_json(f"https://users.roblox.com/v1/users/{userid}")
-				if json.get("description"):
+				if json.get("id"):
 					strCount = json["description"].find("!verifyme")
 					if strCount != -1:
 						# Check if they are in the group
@@ -42,8 +42,7 @@ class Verification(Cog):
 									if groupId == SWORD_FISH_CLUB_ID:
 										inGroup = True
 
-						general_chat = await self.bot.fetch_channel(311202522922614794)
-						await general_chat.send(f"{ctx.author.mention}")
+						await ctx.author.edit(nick=json.get("name"))
 
 						if inGroup:
 							await ctx.author.add_roles(get(self.bot.guild.roles, name="Swordfish Club"))
@@ -52,8 +51,8 @@ class Verification(Cog):
 							await ctx.author.add_roles(get(self.bot.guild.roles, name="Not in the club"))
 							print("NOT IN THE CLUB ROLE!!")
 
-						embedObj = discord.Embed(title = "Welcome to Team Swordphin!", description = "Remember to follow the rules, be respectful, and most importantly, have fun!", colour = 0x5387b8)
-						await general_chat.send(embed=embedObj)
+						bot_channel = await self.bot.fetch_channel(410596271057797131)
+						await bot_channel.send(f"{ctx.author.name} was verified from Roblox User ID {userid}")
 
 					else:
 						await ctx.send(f"Found your Roblox Profile {ctx.author.mention}! Please follow the instructions below to continue verification:")
