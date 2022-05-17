@@ -24,6 +24,21 @@ class Verification(Cog):
 		response = requests.get(link)
 		return response.json()
 
+	async def update_db(self):
+		# Create Verification table for existing users
+		db.multiexecute("INSERT OR IGNORE INTO robloxverification (UserID) VALUES (?)",
+			((member.id,) for member in self.bot.guild.members if not member.bot)
+		)
+
+		# Remove verification from left members
+		to_remove = []
+		stored_members = db.column("SELECT UserID FROM robloxverification")
+		for id_ in stored_members:
+			if not self.bot.guild.get_member(id_):
+				to_remove.append(id_)
+		db.multiexecute("DELETE FROM robloxverification WHERE UserID = ?", ((id_,) for id_ in to_remove))
+		db.commit()
+
 	@command(name="verifyme")
 	async def say_verification(self, ctx, userid: str = None):
 		if can_send_in_channel(ctx.channel.id):
@@ -90,7 +105,25 @@ class Verification(Cog):
 				embedObj.set_image(url="https://i.imgur.com/81H6jxP.png")
 				await ctx.send(embed=embedObj)
 
-	@command(name="verifyProfile")
+	@command(name="setprofile")
+	async def set_roblox_profile(self, ctx, member: Member = None, userid: str = None):
+		if member != None:
+			roleMod = get(self.bot.guild.roles, name="Moderator") # Get the role
+			roleSup = get(self.bot.guild.roles, name="Support Developers")
+
+			if roleMod in ctx.author.roles or roleSup in ctx.author.roles:
+				json = await self.get_json(f"https://users.roblox.com/v1/users/{userid}")
+				if json.get("id"):
+					db.execute("UPDATE robloxverification SET RobloxProfileLink = ? WHERE UserID = ?", userid, member.id)
+					db.commit()
+					name = json.get("name")
+					await ctx.send(f"{member.mention} profile set to {name}. Remember to manually set their nickname if applicable.")
+				else:
+					await ctx.send(f"Could not find Roblox Profile with userid {userid}")
+		else:
+			await ctx.send("You must also specify a member.")
+
+	@command(name="verifyprofile")
 	async def verify_roblox_profile(self, ctx, member: Member = None):
 		link = None
 		if member != None:
@@ -129,6 +162,7 @@ class Verification(Cog):
 	@Cog.listener()
 	async def on_ready(self):
 		if not self.bot.ready:
+			await self.update_db()
 			self.bot.ready_cogs.ready("robloxdiscordverification")
 
 def setup(bot):

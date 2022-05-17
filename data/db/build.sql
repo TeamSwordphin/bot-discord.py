@@ -9,6 +9,6 @@ CREATE TABLE IF NOT EXISTS warnlog (
 	Reason text
 );
 CREATE TABLE IF NOT EXISTS robloxverification (
-	UserId integer,
-	RobloxProfileLink text
+	UserId integer PRIMARY KEY,
+	RobloxProfileLink text DEFAULT ""
 );
