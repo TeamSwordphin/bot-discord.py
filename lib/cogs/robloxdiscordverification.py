@@ -110,14 +110,12 @@ class Verification(Cog):
 		db.execute("INSERT INTO robloxverification (UserID) VALUES (?)", member.id)
 		verification_channel = await self.bot.fetch_channel(734172216299880480)
 		await verification_channel.send(f"{member.mention} Welcome to the Official Team Swordphin Discord!")
-		description = """There are 2 ways to verify yourself. Please choose the most convenient:
+		description = """Please follow instructions below to verify yourself:
 
 		**Normal Verification**
 		Please type !verifyme
-		*This method of verification gives you the exclusive Swordfish Club role if you are in the Roblox group*
 
-		**If you have previously used RoVer**
-		Please type !verify
+		*This method of verification gives you the exclusive Swordfish Club role if you are in the Roblox group*
 		"""
 
 		embedObj = discord.Embed(title = "How to Verify Yourself", description = description, colour = 0x5387b8)
