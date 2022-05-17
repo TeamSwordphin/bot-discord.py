@@ -1,3 +1,4 @@
+from ast import alias
 import requests
 from ..db import db
 
@@ -123,7 +124,7 @@ class Verification(Cog):
 		else:
 			await ctx.send("You must also specify a member.")
 
-	@command(name="verifyprofile")
+	@command(name="verifyprofile", aliases=["viewprofile", "profile"])
 	async def verify_roblox_profile(self, ctx, member: Member = None):
 		link = None
 		if member != None:
@@ -136,6 +137,32 @@ class Verification(Cog):
 			await ctx.send(f"https://www.roblox.com/users/{id}/profile")
 		else:
 			await ctx.send("This user's Roblox Profile was not found.")
+
+	@command(name = "gettesters", pass_context=True)  
+	async def getuser(self, ctx):
+		roleSup = get(self.bot.guild.roles, name="Support Developers")
+		if roleSup in ctx.author.roles:
+			empty = True
+			roleTester = get(self.bot.guild.roles, name="Cubicle Office Worker")
+
+			# Get all objects, and combine them into a bulletpointed list
+			list = ""
+			for member in self.bot.guild.members:
+				if roleTester in member.roles:
+					link = db.record("SELECT RobloxProfileLink FROM robloxverification WHERE UserID = ?", member.id)
+					id = ''.join(link)
+					json = await self.get_json(f"https://users.roblox.com/v1/users/{id}")
+					if json.get("id"):
+						name = json.get("name")
+						list = list + f"• {member.mention} is set to [{name}] with UserId **{id}**.\n"
+						empty = False
+					else:
+						list = list + f"• {member.name} does not have a UserId set.\n"
+
+			if empty:
+				await ctx.send(f"Nobody has the role {roleTester.name}")
+			else:
+				await ctx.send(embed=discord.Embed(title="Tester Roblox Profiles", description=list, colour=0x5387b8))
 
 	# Ping the user for verification instructions
 	@Cog.listener()
