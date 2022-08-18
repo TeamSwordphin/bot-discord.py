@@ -150,14 +150,20 @@ class Verification(Cog):
 			for member in self.bot.guild.members:
 				if roleTester in member.roles:
 					link = db.record("SELECT RobloxProfileLink FROM robloxverification WHERE UserID = ?", member.id)
-					id = ''.join(link)
-					json = await self.get_json(f"https://users.roblox.com/v1/users/{id}")
-					if json.get("id"):
-						name = json.get("name")
-						list = list + f"• {member.mention} is set to [{name}] with UserId **{id}**.\n"
-						empty = False
-					else:
+					id = ''
+
+					try:
+						id = ''.join(link)
+					except:
 						list = list + f"• {member.name} does not have a UserId set.\n"
+					else:
+						json = await self.get_json(f"https://users.roblox.com/v1/users/{id}")
+						if json.get("id"):
+							name = json.get("name")
+							list = list + f"• {member.mention} is set to [{name}] with UserId **{id}**.\n"
+							empty = False
+						else:
+							list = list + f"• {member.name} does not have a UserId set.\n"
 
 			if empty:
 				await ctx.send(f"Nobody has the role {roleTester.name}")

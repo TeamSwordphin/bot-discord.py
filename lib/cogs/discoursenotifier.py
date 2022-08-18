@@ -64,7 +64,7 @@ class Notifier(Cog):
 			response_json = response.json()
 			return response_json["post_stream"]["posts"][0]["updated_at"], response_json
 		else:
-			print("Response returned 403.")
+		#	print("Response returned 403.")
 			return None, None
 
 	async def check_post(self):
