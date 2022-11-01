@@ -129,9 +129,11 @@ class Datastore(Cog):
 
                         # Make Playcount List
                         list = ""
-                        for character in accountJson["Data"]["CharacterPlayCount"]:
-                            count = accountJson["Data"]["CharacterPlayCount"][character]
-                            list = list + f"• {character} - {count:,}\n"
+                        for characterName in accountJson["Data"]["CharacterPlayCount"]:
+                            count = accountJson["Data"]["CharacterPlayCount"][
+                                characterName
+                            ]
+                            list = list + f"• {characterName} - {count:,}\n"
 
                         title = f"Account Information for {member.name}"
                         desc = f"""**Featured Character:** {character}
