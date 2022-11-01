@@ -68,7 +68,7 @@ class Datastore(Cog):
 
     @command(name="character", aliases=["showcharacter"])
     async def show_character_profile(
-        self, ctx, member: Member = None, character: Optional[str] = "DarwinB"
+        self, ctx, member: Optional[Member], character: Optional[str] = "DarwinB"
     ):
         if character == "Darwin":
             character = "DarwinB"
@@ -86,14 +86,10 @@ class Datastore(Cog):
                     )
                 )
             else:
-                user = None
+                if member is None:
+                    member = ctx.author
 
-                if member != None:
-                    user = member
-                else:
-                    user = ctx.author
-
-                id = await verification.get_roblox_id(user)
+                id = await verification.get_roblox_id(member)
 
                 if id:
                     accountData = await self.get_entry(
@@ -131,7 +127,7 @@ class Datastore(Cog):
                                     ]["Defeats"]
                                     nemesis = enemyKey
 
-                        title = f"Account Information for {user.name}"
+                        title = f"Account Information for {member.name}"
                         desc = f"""**Featured Character:** {character}
                                 Level: {characterJson["Data"]["CurrentLevel"]}
                                 HP: {characterJson["Data"]["HP"]:,}
