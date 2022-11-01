@@ -127,14 +127,22 @@ class Datastore(Cog):
                                     ]["Defeats"]
                                     nemesis = enemyKey
 
+                        # Make Playcount List
+                        list = ""
+                        for character in accountJson["Data"]["CharacterPlayCount"]:
+                            count = accountJson["Data"]["CharacterPlayCount"][character]
+                            list = list + f"• {character} - {count:,}\n"
+
                         title = f"Account Information for {member.name}"
                         desc = f"""**Featured Character:** {character}
                                 Level: {characterJson["Data"]["CurrentLevel"]}
                                 HP: {characterJson["Data"]["HP"]:,}
                                 Damage: {characterJson["Data"]["Damage"]:,}
+                                Defense: {math.floor((characterJson["Data"]["Defense"] * 100) + 0.5)}%
                                 Stamina: {characterJson["Data"]["Stamina"]:,}
                                 Critical: {characterJson["Data"]["Crit"]:,}
                                 Sturdiness: {characterJson["Data"]["CritDef"]:,}
+                                Mastery Level: {characterJson["Data"]["MasteryLevel"]}
 
                                 **Fun Stats:**
                                 Hours Played: {math.floor((accountJson["Data"]["TotalHours"] / 3600) + 0.5):,}
@@ -142,6 +150,9 @@ class Datastore(Cog):
                                 Highest Damage: {accountJson["Data"]["HighestDamage"]:,}
                                 Bosses Killed: {accountJson["Data"]["BossesKilled"]:,}
                                 Nemesis: {nemesis}
+
+                                **Play Count:**
+                                {list}
                                 """
 
                         embedObj = discord.Embed(
@@ -153,7 +164,9 @@ class Datastore(Cog):
                             filename=f"{character}.png",
                         )
                         embedObj.set_image(url=f"attachment://{character}.png")
-                        embedObj.set_footer(text="These changes do not update live.")
+                        embedObj.set_footer(
+                            text="These changes do not update live. Base stats only shown."
+                        )
 
                         await ctx.channel.send(file=imageFile, embed=embedObj)
                     else:
