@@ -20,7 +20,7 @@ class RoleAssign(Cog):
 
             if message:
                 titleRule = "Role Assignments"
-                descRule = """React with any of the following emojis to give yourself a role.
+                descRule = """React with any of the following emojis to give yourself a ping role. Unreact at any time to remove the role.
 
 							{} **Ping for Development News**: 
 							React if you would like to get pinged for important development news or releases regarding Team Swordphin's projects. Updates to the game will use this role regularly.
@@ -34,6 +34,11 @@ class RoleAssign(Cog):
 
                 embedObj = discord.Embed(
                     title=titleRule, description=descRule, colour=0x5387B8
+                )
+
+                embedObj.set_image(url="https://i.imgur.com/PUbSYro.png")
+                embedObj.set_footer(
+                    text="These are not member roles and will not give access to any text channels by default. To see community chat channels, you must use the appropriate verification channels."
                 )
 
                 await message.edit(embed=embedObj)

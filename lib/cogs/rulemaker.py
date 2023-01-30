@@ -16,6 +16,8 @@ class RuleMaker(Cog):
 
             titleRule = "Updated Server Rules"
             descRule = """The Team Swordphin's Discord **Server Rules** has been updated. Please make sure to read it over to make sure you are up to date. Failure to properly inform yourself of the updated rules can result in mutes, kicks, or bans.
+
+            There is now a new ping role for community related events in #role-assignments!
 						"""
 
             embedObj = discord.Embed(
@@ -29,12 +31,14 @@ class RuleMaker(Cog):
             await channel.send(embed=embedObj)
 
     @command(name="postrules", aliases=["rules"], hidden=True)
-    async def say_rules(self, ctx, channelId: str = ""):
+    async def say_rules(self, ctx):
         roleSup = get(self.bot.guild.roles, name="Support Developers")
 
         if roleSup in ctx.author.roles:
             # Call this function every time we need to update the rules.
-            channel = await self.bot.fetch_channel(int(channelId))
+            channel = await self.bot.fetch_channel(311200318895423499)
+            messageBan = await channel.fetch_message(921241612238094427)
+            messageRules = await channel.fetch_message(921241612724625418)
 
             titleLink = "Ban Appeals & Scam Links"
             descLink = """**1. Scam Links**
@@ -48,7 +52,7 @@ class RuleMaker(Cog):
                 title=titleLink, description=descLink, colour=0x5387B8
             )
             embedObjLink.set_thumbnail(url="https://i.imgur.com/P8lb5H7.png")
-            await channel.send(embed=embedObjLink)
+            await messageBan.edit(embed=embedObjLink)
 
             titleRule = "Server Rules"
             descRule = """**1. Be respectful.**
@@ -81,7 +85,7 @@ class RuleMaker(Cog):
                 text="These rules are subject to change. Developers and moderators have the right to moderate users for any activity that is considered to violate these rules. Punishments are discretionary (up to the moderator acting) and will often apply according to the situation's severity."
             )
 
-            await channel.send(embed=embedObj)
+            await messageRules.edit(embed=embedObj)
 
     @Cog.listener()
     async def on_ready(self):
