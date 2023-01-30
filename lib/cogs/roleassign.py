@@ -1,11 +1,46 @@
-from discord.ext.commands import Cog
+import discord
+from discord.ext.commands import Cog, command
 from discord.utils import get
+
+emojis = [586372671646728193, 586724160244285440]
 
 
 class RoleAssign(Cog):
     def __init__(self, bot):
         self.bot = bot
         self.role_listener_message_id = 738493435853406301
+
+    @command(name="editMessage", aliases=["edit"])
+    async def edit_role_messages(self, ctx, channelId: str = ""):
+        roleSup = get(self.bot.guild.roles, name="Support Developers")
+
+        if roleSup in ctx.author.roles:
+            channel = await self.bot.fetch_channel(int(channelId))
+            message = await channel.fetch_message(self.role_listener_message_id)
+
+            if message:
+                titleRule = "Role Assignments"
+                descRule = """React with any of the following emojis to give yourself a role.
+
+							{} **Ping for Development News**: 
+							React if you would like to get pinged for important development news or releases regarding Team Swordphin's projects. Updates to the game will use this role regularly.
+							
+							{} **Ping for Community Events**: 
+							React if you would like to get pinged for commmunity related events for Discord and in-game.
+							""".format(
+                    "<:TSPalburnPinged:586724160244285440>",
+                    "<:TSPshopkeepEZ:586372671646728193>",
+                )
+
+                embedObj = discord.Embed(
+                    title=titleRule, description=descRule, colour=0x5387B8
+                )
+
+                await message.edit(embed=embedObj)
+            else:
+                await ctx.channel.send(
+                    "{} This message does not exist.".format(ctx.author.mention)
+                )
 
     @Cog.listener()
     async def on_ready(self):
@@ -17,23 +52,22 @@ class RoleAssign(Cog):
         if payload.guild_id is None or self.role_listener_message_id is None:
             return
 
-        channel = await self.bot.fetch_channel(payload.channel_id)
         # 	message = await channel.fetch_message(payload.message_id)
         tspServer = self.bot.guild
-        emojis = [586372671646728193, 586724160244285440]
         emoji = payload.emoji
 
         if payload.message_id == self.role_listener_message_id:
-            # 	await message.author.add_roles(get(tspServer.roles, name="Swordfish Club"))
-            # 	if emoji.id == emojis[0]: # Shopkeeper kool
-            # 		await payload.member.remove_roles(get(tspServer.roles, name="Swordfish Club"), get(tspServer.roles, name="Not in the club"))
-            # 		await payload.member.send("Hi {}! Please paste your roblox profile link here so I can see if you are in the group! "
-            # 								"The URL should look like this:\n\n**https://www.roblox.com/users/USER_ID_HERE/profile**"
-            # 								.format(payload.member.mention))
             if emoji.id == emojis[1]:  # Alburn ping
-                await payload.member.add_roles(get(tspServer.roles, name="PING ME"))
+                await payload.member.add_roles(tspServer.get_role(606755292520382466))
                 await payload.member.send(
                     "You now have the Pin role! Prepared to be pinged, {}! You can remove the role any time by unreacting.".format(
+                        payload.member.mention
+                    )
+                )
+            elif emoji.id == emojis[0]:  # Shopkeeper ping
+                await payload.member.add_roles(tspServer.get_role(1069686034339733514))
+                await payload.member.send(
+                    "You now have the Community Stoof role! Prepared to be pinged for any community related events, {}! You can remove the role any time by unreacting.".format(
                         payload.member.mention
                     )
                 )
@@ -47,11 +81,19 @@ class RoleAssign(Cog):
         emoji = payload.emoji
 
         if payload.message_id == self.role_listener_message_id:
-            if emoji.id == 586724160244285440:
+            if emoji.id == emojis[1]:
                 member = await tspServer.fetch_member(payload.user_id)
-                await member.remove_roles(get(tspServer.roles, name="PING ME"))
+                await member.remove_roles(tspServer.get_role(606755292520382466))
                 await member.send(
-                    "Sorry to see you go! I have removed your pin role, {}.".format(
+                    "Sorry to see you go! I have removed your pin role, {}. You will no longer be pinged for any future important news relating to the development of PWNED!".format(
+                        member.mention
+                    )
+                )
+            elif emoji.id == emojis[0]:
+                member = await tspServer.fetch_member(payload.user_id)
+                await member.remove_roles(tspServer.get_role(1069686034339733514))
+                await member.send(
+                    "Sorry to see you go! I have removed your community stoof role, {}. You will no longer be pinged for future community related events!".format(
                         member.mention
                     )
                 )

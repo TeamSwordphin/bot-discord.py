@@ -9,7 +9,7 @@ class SayEmbed(Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @command(name="sayembed")
+    @command(name="sayembed", hidden=True)
     async def say_embed_message(
         self,
         ctx,
