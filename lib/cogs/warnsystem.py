@@ -1,10 +1,11 @@
 from typing import Optional
-from ..db import db
 
 import discord
-from discord import Member
-from discord.ext.commands import Cog, command
+from discord import Member, app_commands
+from discord.ext.commands import Cog
 from discord.utils import get
+
+from ..db import db
 
 
 class Warn(Cog):
@@ -23,65 +24,88 @@ class Warn(Cog):
         )
         db.commit()
 
-    @command(name="strike", aliases=["warn"])
+    @app_commands.command(
+        name="strike", description="Give a user a strike! Only available to moderators."
+    )
+    @app_commands.describe(
+        member="Choose a member to strike.",
+        warning="The reason for this strike.",
+    )
     async def record_warning(
         self,
-        ctx,
-        member: Member = None,
+        interaction: discord.Interaction,
+        member: Member,
         *,
-        warning: Optional[str] = "No warning was given.",
-    ):
+        warning: str,
+    ) -> None:
         if member != None:
             roleMod = get(self.bot.guild.roles, name="Moderator")  # Get the role
             roleSup = get(self.bot.guild.roles, name="Support Developers")
 
-            if roleMod in ctx.author.roles or roleSup in ctx.author.roles:
+            if roleMod in interaction.user.roles or roleSup in interaction.user.roles:
                 db.execute(
                     "INSERT INTO warnlog (UserID, Reason) VALUES (?, ?)",
                     member.id,
                     warning,
                 )
                 db.commit()
+
                 title = f"{member.name} has been given a strike!"
                 desc = warning
-                await ctx.send(
+                await interaction.response.send_message(
                     embed=discord.Embed(title=title, description=desc, colour=0x5387B8)
                 )
-                await ctx.message.delete()
 
-    @command(
-        name="strikes",
-        aliases=["warnings", "warns", "getwarns", "getwarnings", "getstrikes"],
+    @app_commands.command(
+        name="getstrikes",
+        description="Shows a list of all strikes a user has collected.",
     )
-    async def get_warnings(self, ctx, member: Member = None):
+    @app_commands.describe(member="The member to see their strikes.")
+    async def get_warnings(
+        self, interaction: discord.Interaction, member: Member
+    ) -> None:
         if member != None:
             roleMod = get(self.bot.guild.roles, name="Moderator")  # Get the role
             roleSup = get(self.bot.guild.roles, name="Support Developers")
 
-            if roleMod in ctx.author.roles or roleSup in ctx.author.roles:
+            if roleMod in interaction.user.roles or roleSup in interaction.user.roles:
                 reasons = db.records(
                     "SELECT Reason FROM warnlog WHERE UserID = ?", member.id
                 )
                 strikeNo = 1
+
+                await interaction.response.send_message(
+                    f"Getting strikes for {member.mention}..."
+                )
+
                 for reason in reasons:
                     title = f"Strike {str(strikeNo)}"
                     desc = "".join(reason)
                     strikeNo += 1
-                    await ctx.send(
+
+                    await interaction.channel.send(
                         embed=discord.Embed(
                             title=title, description=desc, colour=0x5387B8
                         )
                     )
 
-    @command(name="resetstrikes", aliases=["resetstrike"])
-    async def reset_strikes(self, ctx, member: Member = None):
+    @app_commands.command(
+        name="resetstrikes",
+        description="Purges all strikes accumulated on a chosen user.",
+    )
+    @app_commands.describe(member="The member to reset the strikes for.")
+    async def reset_strikes(
+        self, interaction: discord.Interaction, member: Member
+    ) -> None:
         if member != None:
             roleMod = get(self.bot.guild.roles, name="Moderator")  # Get the role
             roleSup = get(self.bot.guild.roles, name="Support Developers")
 
-            if roleMod in ctx.author.roles or roleSup in ctx.author.roles:
+            if roleMod in interaction.user.roles or roleSup in interaction.user.roles:
                 db.execute("DELETE FROM warnlog WHERE UserID = ?", member.id)
-                await ctx.send(f"{member.mention} strikes has been reset.")
+                await interaction.response.send_message(
+                    f"{member.mention} strikes has been reset."
+                )
 
     @Cog.listener()
     async def on_ready(self):
@@ -95,5 +119,5 @@ class Warn(Cog):
         db.execute("DELETE FROM warnlog WHERE UserID = ?", member.id)
 
 
-def setup(bot):
-    bot.add_cog(Warn(bot))
+async def setup(bot):
+    await bot.add_cog(Warn(bot))

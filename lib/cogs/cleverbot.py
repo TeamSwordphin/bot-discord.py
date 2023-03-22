@@ -1,9 +1,8 @@
-import cleverbot
 import random
 
+import cleverbot
 from discord.ext.commands import Cog
 from discord.utils import get
-
 
 REACTIONS = [
     597270319736291347,
@@ -61,5 +60,5 @@ class Cleverbot(Cog):
                         await message.add_reaction(emoji)
 
 
-def setup(bot):
-    bot.add_cog(Cleverbot(bot))
+async def setup(bot):
+    await bot.add_cog(Cleverbot(bot))

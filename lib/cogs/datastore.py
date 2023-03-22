@@ -1,13 +1,13 @@
-from discord.ext.commands import Cog, command
+import base64
+import hashlib
+import json
+import math
 from typing import Optional
-from discord import Member
 
 import discord
-import hashlib
 import requests
-import json
-import base64
-import math
+from discord import Member, app_commands
+from discord.ext.commands import Cog, command
 
 
 class Datastore(Cog):
@@ -66,28 +66,52 @@ class Datastore(Cog):
 
         return r
 
-    @command(name="character", aliases=["showcharacter"])
+    @app_commands.command(
+        name="character",
+        description="Find the character save of a user from PWNED 3 and display it in chat.",
+    )
+    @app_commands.describe(
+        member="Choose a member! If left out, defaults to yourself.",
+        character="Choose a P3 character! Defaults to Darwin.",
+    )
+    @app_commands.choices(
+        character=[
+            app_commands.Choice(name="Darwin", value="DarwinB"),
+            app_commands.Choice(name="Valeri", value="Valeri"),
+            app_commands.Choice(name="Red", value="Red"),
+            app_commands.Choice(name="Clyde", value="Clyde"),
+            app_commands.Choice(name="LingeringForce", value="LingeringForce"),
+            app_commands.Choice(name="Natsuko", value="Natsuko"),
+            app_commands.Choice(name="Alburn", value="Alburn"),
+            app_commands.Choice(name="Stella", value="Stella"),
+        ]
+    )
     async def show_character_profile(
-        self, ctx, member: Optional[Member], character: Optional[str] = "DarwinB"
-    ):
+        self,
+        interaction: discord.Interaction,
+        member: Member,
+        character: app_commands.Choice[str],
+    ) -> None:
+        character = character.value
+
         if character == "Darwin":
             character = "DarwinB"
 
         xpSystem = self.bot.get_cog("XP")
         verification = self.bot.get_cog("Verification")
 
-        _, lvl = await xpSystem.get_stats(ctx.author)
+        _, lvl = await xpSystem.get_stats(interaction.user)
 
-        async with ctx.channel.typing():
+        async with interaction.channel.typing():
             if lvl < 75:
-                await ctx.channel.send(
+                await interaction.response.send_message(
                     "{} You must be at least Level 75 in the Discord Server before you can use this command!".format(
-                        ctx.author.mention
+                        interaction.user.mention
                     )
                 )
             else:
                 if member is None:
-                    member = ctx.author
+                    member = interaction.user
 
                 id = await verification.get_roblox_id(member)
 
@@ -170,17 +194,19 @@ class Datastore(Cog):
                             text="These changes do not update live. Base stats only shown."
                         )
 
-                        await ctx.channel.send(file=imageFile, embed=embedObj)
+                        await interaction.response.send_message(
+                            file=imageFile, embed=embedObj
+                        )
                     else:
-                        await ctx.channel.send(
+                        await interaction.response.send_message(
                             "{} Reached the quota limit or character does not exist. Please make sure you have typed the right character name (case sensitive!) and try again in a minute.".format(
-                                ctx.author.mention
+                                interaction.user.mention
                             )
                         )
                 else:
-                    await ctx.channel.send(
+                    await interaction.response.send_message(
                         "{} You do not have a Roblox profile set! Please re-verify before using this command.".format(
-                            ctx.author.mention
+                            interaction.user.mention
                         )
                     )
 
@@ -190,5 +216,5 @@ class Datastore(Cog):
             self.bot.ready_cogs.ready("datastore")
 
 
-def setup(bot):
-    bot.add_cog(Datastore(bot))
+async def setup(bot):
+    await bot.add_cog(Datastore(bot))

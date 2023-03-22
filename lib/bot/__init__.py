@@ -1,13 +1,13 @@
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from asyncio import sleep
 from glob import glob
-from ..db import db
 
 import discord
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from discord import Intents
 from discord.ext.commands import Bot as BotBase
-from discord.ext.commands import Context
-from discord.ext.commands import CommandNotFound
+from discord.ext.commands import CommandNotFound, Context
+
+from ..db import db
 
 PREFIX = "!"
 OWNER_IDS = [105180779025334272]
@@ -41,15 +41,8 @@ class Bot(BotBase):
             command_prefix=PREFIX, owner_ids=OWNER_IDS, intents=Intents.all()
         )
 
-    def setup(self):
-        for cog in COGS:
-            print(f"loading cog {cog}")
-            self.load_extension(f"lib.cogs.{cog}")
-            print(f"{cog} cog loaded")
-
     def run(self, version):
         self.version = version
-        self.setup()
 
         with open("./lib/bot/token.0", "r", encoding="utf-8") as tokenFile:
             self.token = tokenFile.read()
@@ -82,6 +75,12 @@ class Bot(BotBase):
         else:
             raise exc
 
+    async def setup_hook(self):
+        for cog in COGS:
+            print(f"{cog} Loading...")
+            await self.load_extension(f"lib.cogs.{cog}")
+            print(f"{cog} Loaded!")
+
     async def on_ready(self):
         if not self.ready:
             self.guild = self.get_guild(GUILD)
@@ -93,6 +92,12 @@ class Bot(BotBase):
 
             while not self.ready_cogs.ready_all():
                 await sleep(0.5)
+
+            try:
+                synced = await self.tree.sync()
+                print(f"Synced {len(synced)} commands!")
+            except Exception as e:
+                print(e)
 
             self.ready = True
             print("bot ready")

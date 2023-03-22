@@ -42,5 +42,5 @@ class SaveEditor(Cog):
             self.bot.ready_cogs.ready("saveeditornotifier")
 
 
-def setup(bot):
-    bot.add_cog(SaveEditor(bot))
+async def setup(bot):
+    await bot.add_cog(SaveEditor(bot))

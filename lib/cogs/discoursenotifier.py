@@ -1,11 +1,9 @@
-import requests
-from bs4 import BeautifulSoup
-from apscheduler.triggers.cron import CronTrigger
-
 import discord
+import requests
+from apscheduler.triggers.cron import CronTrigger
+from bs4 import BeautifulSoup
 from discord.ext.commands import Cog, command
 from discord.utils import get
-
 
 TEXT_CHANNELS_TO_SEND = [410596428348391445, 410995977688842240]
 LINK = "https://devforum.roblox.com/t/pwned-3-update-notes/943110"
@@ -98,8 +96,9 @@ class Notifier(Cog):
                     minute="3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,59"
                 ),
             )
+
             self.bot.ready_cogs.ready("discoursenotifier")
 
 
-def setup(bot):
-    bot.add_cog(Notifier(bot))
+async def setup(bot):
+    await bot.add_cog(Notifier(bot))

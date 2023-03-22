@@ -1,8 +1,8 @@
 from typing import Optional
 
 import discord
-from discord.utils import get
 from discord.ext.commands import Cog, command
+from discord.utils import get
 
 
 class SayEmbed(Cog):
@@ -38,5 +38,5 @@ class SayEmbed(Cog):
             self.bot.ready_cogs.ready("sayembed")
 
 
-def setup(bot):
-    bot.add_cog(SayEmbed(bot))
+async def setup(bot):
+    await bot.add_cog(SayEmbed(bot))

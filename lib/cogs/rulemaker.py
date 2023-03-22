@@ -93,5 +93,5 @@ class RuleMaker(Cog):
             self.bot.ready_cogs.ready("rulemaker")
 
 
-def setup(bot):
-    bot.add_cog(RuleMaker(bot))
+async def setup(bot):
+    await bot.add_cog(RuleMaker(bot))

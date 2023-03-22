@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta
 from random import randint
-from ..db import db
 
-from discord import Member
+import discord
+from discord import Member, app_commands
 from discord.ext.commands import Cog, command
 from discord.utils import get
 
+from ..db import db
 
 CHANNEL_EXP = [
     {"ChannelID": 311202522922614794, "EXP": 20},  # General
@@ -87,15 +88,17 @@ class XP(Cog):
             None,
         )
 
-    async def display_level(self, message, target):
+    async def display_level(self, interaction: discord.Interaction, target):
         xp, lvl = await self.get_stats(target)
-        async with message.channel.typing():
+        async with interaction.channel.typing():
             if xp:
-                await message.channel.send(
+                await interaction.response.send_message(
                     "{} is on Level {} with {} XP.".format(target.display_name, lvl, xp)
                 )
             else:
-                await message.channel.send("This member does not have a level.")
+                await interaction.response.send_message(
+                    "This member does not have a level."
+                )
 
     async def update_db(self):
         # Create XP for existing users
@@ -115,20 +118,34 @@ class XP(Cog):
         )
         db.commit()
 
-    @command(name="level", aliases=["lvl"])
-    async def say_level(self, ctx, member: Member = None):
+    @app_commands.command(
+        name="level",
+        description="Shows the Discord Level of a member.",
+    )
+    @app_commands.describe(member="The member to show.")
+    async def say_level(self, interaction: discord.Interaction, member: Member) -> None:
         if member != None:
-            await self.display_level(ctx, member)
+            await self.display_level(interaction, member)
         else:
-            await self.display_level(ctx, ctx.author)
+            await self.display_level(interaction, interaction.user)
 
-    @command(name="setxp", alias=["setexp"])
-    async def addexp(self, ctx, member: Member = None, amount_str: str = "0"):
+    @app_commands.command(
+        name="setxp",
+        description="Set the XP of a specified member.",
+    )
+    @app_commands.describe(
+        member="The member to set the xp for.",
+        exp="The EXP that this user will be set to.",
+    )
+    async def addexp(
+        self, interaction: discord.Interaction, member: Member, exp: str
+    ) -> None:
         if member != None:
             role = get(self.bot.guild.roles, name="Support Developers")  # Get the role
-            if role in ctx.author.roles:
-                amount = int(amount_str)
+            if role in interaction.user.roles:
+                amount = int(exp)
                 new_lvl = adjust_lvl(amount)
+
                 db.execute(
                     "UPDATE exp SET XP = ?, Level = ?, XPLock = ? WHERE UserID = ?",
                     amount,
@@ -137,9 +154,14 @@ class XP(Cog):
                     member.id,
                 )
                 db.commit()
-                await ctx.send(f"Changed {member.mention}'s XP to {amount_str}!")
+
+                await interaction.response.send_message(
+                    f"Changed {member.mention}'s XP to {exp}!"
+                )
         else:
-            await ctx.send(f"{ctx.author.mention} Please indicate a user to change xp!")
+            await interaction.response.send_message(
+                f"{interaction.user.mention} Please indicate a user to change xp!"
+            )
 
     @Cog.listener()
     async def on_ready(self):
@@ -163,5 +185,5 @@ class XP(Cog):
             await self.process_xp(message, 0)
 
 
-def setup(bot):
-    bot.add_cog(XP(bot))
+async def setup(bot):
+    await bot.add_cog(XP(bot))

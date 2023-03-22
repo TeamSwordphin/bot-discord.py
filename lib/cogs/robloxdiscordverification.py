@@ -1,11 +1,12 @@
 from ast import alias
-import requests
-from ..db import db
 
 import discord
-from discord import Member
-from discord.utils import get
+import requests
+from discord import Member, app_commands
 from discord.ext.commands import Cog, command
+from discord.utils import get
+
+from ..db import db
 
 TEXT_CHANNELS_TO_SEND = [734172216299880480, 410596271057797131]
 SWORD_FISH_CLUB_ID = 3451727
@@ -46,9 +47,15 @@ class Verification(Cog):
         )
         db.commit()
 
-    @command(name="verifyme")
-    async def say_verification(self, ctx, userid: str = None):
-        if can_send_in_channel(ctx.channel.id):
+    @app_commands.command(
+        name="verifyme",
+        description="Begin the verification process.",
+    )
+    @app_commands.describe(userid="Your Roblox User Id to use for verification.")
+    async def say_verification(
+        self, interaction: discord.Interaction, userid: str
+    ) -> None:
+        if can_send_in_channel(interaction.channel.id):
             if userid != None:
                 json = await self.get_json(
                     f"https://users.roblox.com/v1/users/{userid}"
@@ -73,36 +80,40 @@ class Verification(Cog):
                         db.execute(
                             "UPDATE robloxverification SET RobloxProfileLink = ? WHERE UserID = ?",
                             userid,
-                            ctx.author.id,
+                            interaction.user.id,
                         )
                         db.commit()
 
                         if inGroup:
-                            await ctx.author.add_roles(
+                            await interaction.user.add_roles(
                                 get(self.bot.guild.roles, name="Swordfish Club")
                             )
                             print("GAVE SWORDFISH ROLE!!")
                         else:
-                            await ctx.author.add_roles(
+                            await interaction.user.add_roles(
                                 get(self.bot.guild.roles, name="Not in the club")
                             )
                             print("NOT IN THE CLUB ROLE!!")
 
                         bot_channel = await self.bot.fetch_channel(410596271057797131)
-                        await ctx.author.edit(nick=json.get("name"))
+                        await interaction.user.edit(nick=json.get("name"))
                         await bot_channel.send(
-                            f"{ctx.author.mention} was verified from Roblox User ID {userid}"
+                            f"{interaction.user.mention} was verified from Roblox User ID {userid}"
+                        )
+
+                        await interaction.response.send_message(
+                            f"{interaction.user.mention} is verified."
                         )
 
                     else:
-                        await ctx.send(
-                            f"Found your Roblox Profile {ctx.author.mention}! Please follow the instructions below to continue verification:"
+                        await interaction.response.send_message(
+                            f"Found your Roblox Profile {interaction.user.mention}! Please follow the instructions below to continue verification:"
                         )
                         description = """**Step 1**
 						Please go to your Roblox Profile, edit your User Profile's description to include the tag "!verifyme".
 
 						**Step 2**
-						Come back here, and type in "!verifyme YOUR_USER_ID_HERE" again.
+						Come back here, and type in "/verifyme YOUR_USER_ID_HERE" again.
 
 						**Step 3**
 						You may remove this tag once verification is complete.
@@ -113,21 +124,23 @@ class Verification(Cog):
                             description=description,
                             colour=0x5387B8,
                         )
-                        await ctx.send(embed=embedObj)
-                        await ctx.send("https://i.imgur.com/Aa57Gr8.mp4")
+                        await interaction.channel.send(embed=embedObj)
+                        await interaction.channel.send(
+                            "https://i.imgur.com/Aa57Gr8.mp4"
+                        )
 
                 else:
-                    await ctx.send(
-                        f"Hi {ctx.author.mention}, I did not find a user that goes under the id of **{userid}**! Please make sure the id you gave is correct."
+                    await interaction.response.send_message(
+                        f"Hi {interaction.user.mention}, I did not find a user that goes under the id of **{userid}**! Please make sure the id you gave is correct."
                     )
             else:
-                await ctx.send(
+                await interaction.response.send_message(
                     f"Please follow the instructions below to verify yourself:"
                 )
-                description = """Please use the command !verifyme followed by the UserId of your Roblox Profile. For example:
+                description = """Please use the command /verifyme followed by the UserId of your Roblox Profile. For example:
 
-				**!verifyme YOUR_USER_ID_HERE**
-				**!verifyme 297701**
+				**/verifyme YOUR_USER_ID_HERE**
+				**/verifyme 297701**
 
 				To find your UserId, please go to your Roblox profile, and copy the numbers from the URL bar:
 				"""
@@ -138,15 +151,24 @@ class Verification(Cog):
                     colour=0x5387B8,
                 )
                 embedObj.set_image(url="https://i.imgur.com/81H6jxP.png")
-                await ctx.send(embed=embedObj)
+                await interaction.channel.send(embed=embedObj)
 
-    @command(name="setprofile")
-    async def set_roblox_profile(self, ctx, member: Member = None, userid: str = None):
+    @app_commands.command(
+        name="setprofile",
+        description="Connect a Discord member to a Roblox profile.",
+    )
+    @app_commands.describe(
+        member="The member to set.",
+        userid="Your Roblox User Id to use for verification.",
+    )
+    async def set_roblox_profile(
+        self, interaction: discord.Interaction, member: Member, userid: str
+    ) -> None:
         if member != None:
             roleMod = get(self.bot.guild.roles, name="Moderator")  # Get the role
             roleSup = get(self.bot.guild.roles, name="Support Developers")
 
-            if roleMod in ctx.author.roles or roleSup in ctx.author.roles:
+            if roleMod in interaction.user.roles or roleSup in interaction.user.roles:
                 json = await self.get_json(
                     f"https://users.roblox.com/v1/users/{userid}"
                 )
@@ -158,15 +180,15 @@ class Verification(Cog):
                     )
                     db.commit()
                     name = json.get("name")
-                    await ctx.send(
+                    await interaction.response.send_message(
                         f"{member.mention} profile set to {name}. Remember to manually set their nickname if applicable."
                     )
                 else:
-                    await ctx.send(
+                    await interaction.response.send_message(
                         f"Could not find Roblox Profile with userid {userid}"
                     )
         else:
-            await ctx.send("You must also specify a member.")
+            await interaction.response.send_message("You must also specify a member.")
 
     async def get_roblox_id(self, member: Member = None):
         link = db.record(
@@ -177,23 +199,36 @@ class Verification(Cog):
         if link != None:
             return "".join(link)
 
-    @command(name="verifyprofile", aliases=["viewprofile", "profile"])
-    async def verify_roblox_profile(self, ctx, member: Member = None):
+    @app_commands.command(
+        name="verifyprofile",
+        description="Verify a member's Roblox Profile.",
+    )
+    @app_commands.describe(member="The member to verify.")
+    async def verify_roblox_profile(
+        self, interaction: discord.Interaction, member: Member
+    ) -> None:
         id = None
         if member != None:
             id = await self.get_roblox_id(member)
         else:
-            id = await self.get_roblox_id(ctx.author)
+            id = await self.get_roblox_id(interaction.user)
 
         if id != None:
-            await ctx.send(f"https://www.roblox.com/users/{id}/profile")
+            await interaction.response.send_message(
+                f"https://www.roblox.com/users/{id}/profile"
+            )
         else:
-            await ctx.send("This user's Roblox Profile was not found.")
+            await interaction.response.send_message(
+                "This user's Roblox Profile was not found."
+            )
 
-    @command(name="gettesters", pass_context=True)
-    async def getuser(self, ctx):
+    @app_commands.command(
+        name="gettesters",
+        description="Returns a list of all current P3 Testers.",
+    )
+    async def getuser(self, interaction: discord.Interaction) -> None:
         roleSup = get(self.bot.guild.roles, name="Support Developers")
-        if roleSup in ctx.author.roles:
+        if roleSup in interaction.user.roles:
             empty = True
             roleTester = get(self.bot.guild.roles, name="Cubicle Office Worker")
 
@@ -228,9 +263,11 @@ class Verification(Cog):
                             )
 
             if empty:
-                await ctx.send(f"Nobody has the role {roleTester.name}")
+                await interaction.response.send_message(
+                    f"Nobody has the role {roleTester.name}"
+                )
             else:
-                await ctx.send(
+                await interaction.response.send_message(
                     embed=discord.Embed(
                         title="Tester Roblox Profiles",
                         description=list,
@@ -246,17 +283,19 @@ class Verification(Cog):
         await verification_channel.send(
             f"{member.mention} Welcome to the Official Team Swordphin Discord!"
         )
-        description = """Please follow the exact instructions below to verify yourself:
 
-		**Normal Verification**
-		Please type !verifyme
+        description = """Please use the command /verifyme followed by the UserId of your Roblox Profile. For example:
 
-		*This method of verification gives you the exclusive Swordfish Club role if you are in the Roblox group*
-		"""
+        **/verifyme YOUR_USER_ID_HERE**
+        **/verifyme 297701**
+
+        To find your UserId, please go to your Roblox profile, and copy the numbers from the URL bar:
+        """
 
         embedObj = discord.Embed(
             title="How to Verify Yourself", description=description, colour=0x5387B8
         )
+        embedObj.set_image(url="https://i.imgur.com/81H6jxP.png")
         await verification_channel.send(embed=embedObj)
 
     # Delete to databases
@@ -271,5 +310,5 @@ class Verification(Cog):
             self.bot.ready_cogs.ready("robloxdiscordverification")
 
 
-def setup(bot):
-    bot.add_cog(Verification(bot))
+async def setup(bot):
+    await bot.add_cog(Verification(bot))
