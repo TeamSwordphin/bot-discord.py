@@ -22,12 +22,12 @@ class MessagingService(Cog):
         self._objects_url = self._base_url + self._universeId + "/topics/" + self._topic
 
     @app_commands.command(
-        name="shop", description="Enable or disable certain shop items in P3."
+        name="shopkeep", description="Enable or disable certain shop items in P3."
     )
     @app_commands.describe(
         category="The category this item is in.",
         tab="The tab this item is located.",
-        item="The item in question. If spelt wrong, no item will be adjusted.",
+        item="The item in question. Case sensitive.",
         purchasable="Enable or disable the ability to purchase this item for users.",
     )
     @app_commands.choices(
@@ -51,7 +51,6 @@ class MessagingService(Cog):
             app_commands.Choice(name="Pets", value="Pets"),
             app_commands.Choice(name="Player Cards", value="Player Cards"),
             app_commands.Choice(name="Account", value="Account"),
-            app_commands.Choice(name="Consumables", value="Consumables"),
             app_commands.Choice(name="Gemstones", value="Gemstones"),
             app_commands.Choice(name="Characters", value="Characters"),
             app_commands.Choice(name="Evocations", value="Evocations"),
@@ -61,7 +60,7 @@ class MessagingService(Cog):
             app_commands.Choice(name="Off", value="True"),
         ],
     )
-    async def shop(
+    async def shopkeep(
         self,
         interaction: discord.Interaction,
         category: app_commands.Choice[str],
