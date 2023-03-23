@@ -7,7 +7,7 @@ from typing import Optional
 import discord
 import requests
 from discord import Member, app_commands
-from discord.ext.commands import Cog, command
+from discord.ext.commands import Cog
 
 
 class Datastore(Cog):
@@ -33,9 +33,6 @@ class Datastore(Cog):
         self._list_objects_url = (
             self._base_url + self._universeId + "/standard-datastores/datastore/entries"
         )
-
-    def _H(self):
-        return {"x-api-key": self._apiKey}
 
     def _get_url(self, path_format: str):
         return f"{self._config['base_url']}/{path_format.format(self._config['universe_id'])}"

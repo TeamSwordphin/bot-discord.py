@@ -1,10 +1,10 @@
 import discord
-from discord.ext.commands import Cog, command
+from discord.ext.commands import Cog
 from quart import Quart, request
 
 app = Quart(__name__)
 
-# Bot messages are enabled here
+# Bot messages are enabled here. Mainly to send Save data edits to discord
 @app.route("/", methods=["POST"])
 async def index():
     data = await request.get_json()
@@ -30,7 +30,7 @@ async def index():
         return "0"
 
 
-class SaveEditor(Cog):
+class HttpServices(Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -39,8 +39,8 @@ class SaveEditor(Cog):
         if not self.bot.ready:
             app.bot = self.bot
             self.bot.loop.create_task(app.run_task(host="0.0.0.0", port=5000))
-            self.bot.ready_cogs.ready("saveeditornotifier")
+            self.bot.ready_cogs.ready("httpservices")
 
 
 async def setup(bot):
-    await bot.add_cog(SaveEditor(bot))
+    await bot.add_cog(HttpServices(bot))

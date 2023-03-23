@@ -22,7 +22,6 @@ class CogsReady(object):
 
     def ready(self, cog):
         setattr(self, cog, True)
-        print(f"{cog} cog ready")
 
     def ready_all(self):
         return all([getattr(self, cog) for cog in COGS])
@@ -90,8 +89,12 @@ class Bot(BotBase):
                 status=discord.Status.dnd, activity=discord.Game("with Sword!")
             )
 
+            print("Readying cogs...")
+
             while not self.ready_cogs.ready_all():
                 await sleep(0.5)
+
+            print("Cogs are all ready!")
 
             try:
                 synced = await self.tree.sync()
