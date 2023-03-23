@@ -123,10 +123,26 @@ class Datastore(Cog):
                         "{}_SaveData_Character_{}".format(id, character),
                     )
 
-                    if (
-                        accountData.status_code < 400
-                        and characterData.status_code < 400
-                    ):
+                    ac_status = accountData.status_code
+                    ch_status = accountData.status_code
+
+                    if ac_status == 403 or ch_status == 403:
+                        await interaction.response.send_message(
+                            "{} The server returned 403 Unauthorized! My owner probably lost their keys again...".format(
+                                interaction.user.mention
+                            )
+                        )
+                        return
+
+                    if ac_status == 429 or ch_status == 429:
+                        await interaction.response.send_message(
+                            "{} The server returned error 429 Too Many Requests! Please wait a few minutes before trying again!".format(
+                                interaction.user.mention
+                            )
+                        )
+                        return
+
+                    if ac_status == 200 and ch_status == 200:
                         accountJson = accountData.json()
                         characterJson = characterData.json()
 
@@ -196,7 +212,7 @@ class Datastore(Cog):
                         )
                     else:
                         await interaction.response.send_message(
-                            "{} Reached the quota limit or character does not exist. Please make sure you have typed the right character name (case sensitive!) and try again in a minute.".format(
+                            "{} Character does not exist. Please make sure you have typed the right character name (case sensitive!) and try again in a minute.".format(
                                 interaction.user.mention
                             )
                         )

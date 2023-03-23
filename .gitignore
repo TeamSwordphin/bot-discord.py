@@ -1,8 +1,11 @@
 *.db
 *.db-journal
 __pycache__
+.env
 lib/bot/token.0
-lib/bot/testToken.0
+lib/bot/bot_client_id.0
+lib/bot/bot_client_secret.0
+lib/bot/bot_direct_uri.0
 lib/bot/cleverbot.0
 lib/bot/old_bot_code.0
 lib/bot/robloxOpenCloudToken.0

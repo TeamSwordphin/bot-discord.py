@@ -1,9 +1,7 @@
-from ast import alias
-
 import discord
 import requests
 from discord import Member, app_commands
-from discord.ext.commands import Cog, command
+from discord.ext.commands import Cog
 from discord.utils import get
 
 from ..db import db
@@ -41,6 +39,7 @@ class Verification(Cog):
         for id_ in stored_members:
             if not self.bot.guild.get_member(id_):
                 to_remove.append(id_)
+
         db.multiexecute(
             "DELETE FROM robloxverification WHERE UserID = ?",
             ((id_,) for id_ in to_remove),
@@ -55,6 +54,14 @@ class Verification(Cog):
     async def say_verification(
         self, interaction: discord.Interaction, userid: str
     ) -> None:
+        # Check if the user has a user id set already (either a bot or trying to re-verify?)
+        id_exists = await self.get_member_from_roblox_id(userid)
+        if id_exists:
+            await interaction.response.send_message(
+                f"{interaction.user.mention} UserId {userid} was already found in this discord server! If you have an alt or have someone posing as you, please immediately contact a moderator."
+            )
+            return
+
         if can_send_in_channel(interaction.channel.id):
             if userid != None:
                 json = await self.get_json(
@@ -110,14 +117,14 @@ class Verification(Cog):
                             f"Found your Roblox Profile {interaction.user.mention}! Please follow the instructions below to continue verification:"
                         )
                         description = """**Step 1**
-						Please go to your Roblox Profile, edit your User Profile's description to include the tag "!verifyme".
+                        Please go to your Roblox Profile, edit your User Profile's description to include the tag "!verifyme".
 
-						**Step 2**
-						Come back here, and type in "/verifyme YOUR_USER_ID_HERE" again.
+                        **Step 2**
+                        Come back here, and type in "/verifyme YOUR_USER_ID_HERE" again.
 
-						**Step 3**
-						You may remove this tag once verification is complete.
-						"""
+                        **Step 3**
+                        You may remove this tag once verification is complete.
+                        """
 
                         embedObj = discord.Embed(
                             title="Verification Pt.2",
@@ -139,11 +146,11 @@ class Verification(Cog):
                 )
                 description = """Please use the command /verifyme followed by the UserId of your Roblox Profile. For example:
 
-				**/verifyme YOUR_USER_ID_HERE**
-				**/verifyme 297701**
+                **/verifyme YOUR_USER_ID_HERE**
+                **/verifyme 297701**
 
-				To find your UserId, please go to your Roblox profile, and copy the numbers from the URL bar:
-				"""
+                To find your UserId, please go to your Roblox profile, and copy the numbers from the URL bar:
+                """
 
                 embedObj = discord.Embed(
                     title="Verification Instructions",
@@ -190,6 +197,16 @@ class Verification(Cog):
         else:
             await interaction.response.send_message("You must also specify a member.")
 
+    # Fetches the Discord member from a roblox id
+    async def get_member_from_roblox_id(self, userId: str = ""):
+        discordUserId = db.record(
+            "SELECT UserId FROM robloxverification WHERE RobloxProfileLink = ?", userId
+        )
+
+        if discordUserId != None:
+            return str(discordUserId[0])
+
+    # Fetches the roblox id of a user
     async def get_roblox_id(self, member: Member = None):
         link = db.record(
             "SELECT RobloxProfileLink FROM robloxverification WHERE UserID = ?",
@@ -200,7 +217,32 @@ class Verification(Cog):
             return "".join(link)
 
     @app_commands.command(
-        name="verifyprofile",
+        name="verifydiscord",
+        description="Verify a member's Discord Profile using a Roblox id.",
+    )
+    @app_commands.describe(
+        robloxuserid="The Roblox User Id to be used for verification.",
+    )
+    async def verify_discord_profile_from_userid(
+        self, interaction: discord.Interaction, robloxuserid: str
+    ) -> None:
+        id = await self.get_member_from_roblox_id(robloxuserid)
+
+        if id != None:
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Found User!",
+                    description=f"This Roblox ID belongs to User <@{str(id)}>",
+                    colour=0x5387B8,
+                )
+            )
+        else:
+            await interaction.response.send_message(
+                "A user was not found with this Roblox user id."
+            )
+
+    @app_commands.command(
+        name="verifyroblox",
         description="Verify a member's Roblox Profile.",
     )
     @app_commands.describe(member="The member to verify.")
