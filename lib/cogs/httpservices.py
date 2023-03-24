@@ -130,6 +130,7 @@ class HttpServices(Cog):
             "token_type": token_type,
         }
         metadata = {}
+        member = await self.guild.fetch_member(user_id)
 
         try:
             # Fetch the new metadata you want to use from an external source.
@@ -145,24 +146,17 @@ class HttpServices(Cog):
             }
 
             verification = self.bot.get_cog("Verification")
-            member = await self.guild.fetch_member(user_id)
             id = None
-
-            print(member)
-            print(4)
 
             # Determine if this user is verified
             if member:
-                print(4.1)
                 id = await verification.get_roblox_id(member)
-                print(4.2)
+
                 if id:
                     metadata["verified"] = True
 
             if id == None:
                 return
-
-            print(5)
 
             # Calculate the random stats this user has
             datastore = self.bot.get_cog("Datastore")
@@ -172,12 +166,8 @@ class HttpServices(Cog):
                 f"{id}_SaveData_Account",
             )
 
-            print(6)
-
             if type(account_json) == int:
                 return
-
-            print(7)
 
             if account_json == None:
                 return
@@ -205,8 +195,6 @@ class HttpServices(Cog):
             # Calculate the highest combo this user got
             metadata["highestcombo"] = account_json["Data"]["HighestCombo"]
 
-            print(8)
-
         except Exception as e:
             print("Error fetching external data:" + e)
             # If fetching the profile data for the external service fails for any reason,
@@ -216,7 +204,8 @@ class HttpServices(Cog):
 
         # Push the data to Discord.
         discordhelper.push_metadata(user_id, tokens, metadata)
-        print("Updated Metadata")
+        bot_channel = await self.bot.fetch_channel(410596271057797131)
+        await bot_channel.send(f"{member.mention} updated their Linked Roles.")
 
     @Cog.listener()
     async def on_ready(self):
