@@ -1,6 +1,4 @@
 import json
-import pickle
-import sqlite3
 import time
 import uuid
 
@@ -83,10 +81,11 @@ class discordhelper:
                 tokens["access_token"] = tokens["access_token"]
                 tokens["expires_at"] = time.time() + tokens["expires_in"]
 
-                binary_data = sqlite3.Binary(pickle.dumps(tokens))
                 db.execute(
-                    "UPDATE oauthcontainer SET Token = ? WHERE UserID = ?",
-                    binary_data,
+                    "UPDATE oauth SET Token = ?, Expires = ?, RefreshToken = ? WHERE UserID = ?",
+                    tokens["access_token"],
+                    tokens["expires_at"],
+                    tokens["refresh_token"],
                     user_id,
                 )
                 db.commit()
@@ -121,6 +120,7 @@ class discordhelper:
         access_token = discordhelper.get_access_token(user_id, tokens)
         body = {
             "platform_name": "PWNED 3",
+            "platform_username": "Combat Summary",
             "metadata": metadata,
         }
         response = requests.put(

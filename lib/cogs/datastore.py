@@ -131,7 +131,7 @@ class Datastore(Cog):
 
     @app_commands.command(
         name="character",
-        description="Find the character save of a user from PWNED 3 and display it in chat.",
+        description="View a user's character data. Also updates their App page if they linked with Althea.",
     )
     @app_commands.describe(
         member="Choose a member! If left out, defaults to yourself.",
@@ -282,6 +282,10 @@ class Datastore(Cog):
                     await interaction.response.send_message(
                         file=imageFile, embed=embedObj
                     )
+
+                    # Update the Metadata if they have a linked account
+                    httpservices = self.bot.get_cog("HttpServices")
+                    await httpservices.update_metadata(member.id)
                 else:
                     await interaction.response.send_message(
                         "{} You do not have a Roblox profile set! Please re-verify before using this command.".format(
