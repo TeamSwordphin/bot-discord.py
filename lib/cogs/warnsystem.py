@@ -1,5 +1,3 @@
-from typing import Optional
-
 import discord
 from discord import Member, app_commands
 from discord.ext.commands import Cog
@@ -19,6 +17,7 @@ class Warn(Cog):
         for id_ in stored_members:
             if not self.bot.guild.get_member(id_):
                 to_remove.append(id_)
+
         db.multiexecute(
             "DELETE FROM warnlog WHERE UserID = ?", ((id_,) for id_ in to_remove)
         )
