@@ -3,7 +3,6 @@ import requests
 from apscheduler.triggers.cron import CronTrigger
 from bs4 import BeautifulSoup
 from discord.ext.commands import Cog, command
-from discord.utils import get
 
 TEXT_CHANNELS_TO_SEND = [410596428348391445, 410995977688842240]
 LINK = "https://devforum.roblox.com/t/pwned-3-update-notes/943110"

@@ -2,10 +2,15 @@ import base64
 import hashlib
 import json
 import math
-from typing import Optional
+import os
+import pathlib
+import shutil
+import time
+from pathlib import Path
 
 import discord
 import requests
+from apscheduler.triggers.cron import CronTrigger
 from discord import Member, app_commands
 from discord.ext.commands import Cog
 
@@ -52,7 +57,6 @@ class Datastore(Cog):
         if "Content-MD5" in r.headers:
             expected_checksum = r.headers["Content-MD5"]
             checksum = base64.b64encode(hashlib.md5(r.content).digest())
-            # print(f'Expected {expected_checksum},  got {checksum}')
 
         attributes = None
         if self.ATTR_HDR in r.headers:
@@ -62,6 +66,68 @@ class Datastore(Cog):
             user_ids = json.loads(r.headers[self.USER_ID_HDR])
 
         return r
+
+    # Loads the data from a file given the datastore and key, if not found, then query to the DatastoreServices
+    async def load_data(self, interaction: discord.Interaction, datastore, object_key):
+        path = f"./data/temp/{datastore}/{object_key}.json"
+        cachedResults = Path(path)
+
+        if cachedResults.is_file():
+            # Check if their json files was cached first
+            with open(path) as f:
+                return json.load(f)
+        else:
+            # Query the server
+            data = await self.get_entry(datastore, object_key)
+            status_code = data.status_code
+
+            if status_code == 403:
+                if interaction != None:
+                    await interaction.response.send_message(
+                        "{} The server returned 403 Unauthorized! My owner probably lost their keys again...".format(
+                            interaction.user.mention
+                        )
+                    )
+                return 403
+
+            if status_code == 429:
+                if interaction != None:
+                    await interaction.response.send_message(
+                        "{} The server returned error 429 Too Many Requests! Please wait a few minutes before trying again!".format(
+                            interaction.user.mention
+                        )
+                    )
+                return 429
+
+            if status_code == 200:
+                # Cache the result, and delete it after a time
+                jsonResult = data.json()
+                jsonResult["updated"] = time.time()
+
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump(jsonResult, f, ensure_ascii=False, indent=4)
+
+                return jsonResult
+
+    # Expires individual directories
+    async def expire_json(self, folder):
+        files = os.listdir(folder)
+
+        for file in files:
+            if file.endswith(".json"):
+                full_path = folder + "/" + file
+
+                with open(full_path) as f:
+                    data = json.load(f)
+                    updated = data["updated"]
+
+                    if (time.time() - updated) >= 300:
+                        os.remove(full_path)
+
+    # Runs expiration on all folders in temp
+    async def expire_old_data(self):
+        await self.expire_json("./data/temp/Account_ProfileStore_Suffix_7")
+        await self.expire_json("./data/temp/Character_ProfileStore_Suffix_7")
 
     @app_commands.command(
         name="character",
@@ -91,9 +157,6 @@ class Datastore(Cog):
     ) -> None:
         character = character.value
 
-        if character == "Darwin":
-            character = "DarwinB"
-
         xpSystem = self.bot.get_cog("XP")
         verification = self.bot.get_cog("Verification")
 
@@ -110,112 +173,115 @@ class Datastore(Cog):
                 if member is None:
                     member = interaction.user
 
+                # Check if they have a Roblox ID assigned to the specified member
                 id = await verification.get_roblox_id(member)
 
                 if id:
-                    accountData = await self.get_entry(
+                    accountJson = await self.load_data(
+                        interaction,
                         "Account_ProfileStore_Suffix_7",
-                        "{}_SaveData_Account".format(id),
+                        f"{id}_SaveData_Account",
                     )
 
-                    characterData = await self.get_entry(
+                    characterJson = await self.load_data(
+                        interaction,
                         "Character_ProfileStore_Suffix_7",
-                        "{}_SaveData_Character_{}".format(id, character),
+                        f"{id}_SaveData_Character_{character}",
                     )
 
-                    ac_status = accountData.status_code
-                    ch_status = accountData.status_code
+                    if type(accountJson) == int or type(characterJson) == int:
+                        return
 
-                    if ac_status == 403 or ch_status == 403:
+                    if accountJson == None or characterJson == None:
                         await interaction.response.send_message(
-                            "{} The server returned 403 Unauthorized! My owner probably lost their keys again...".format(
+                            "{} This character was not found in the given member!".format(
                                 interaction.user.mention
                             )
                         )
                         return
 
-                    if ac_status == 429 or ch_status == 429:
-                        await interaction.response.send_message(
-                            "{} The server returned error 429 Too Many Requests! Please wait a few minutes before trying again!".format(
-                                interaction.user.mention
-                            )
+                    # Determine Nemesis by seeing which enemy they got killed the most!
+                    nemesis = "None"
+                    mostKilledBy = 0
+                    totalKills = 0
+                    iterateOverEnemyTypes = ["Mobs", "Bosses"]
+
+                    for enemyType in iterateOverEnemyTypes:
+                        for enemyKey in accountJson["Data"]["Journal"][enemyType]:
+                            if (
+                                accountJson["Data"]["Journal"][enemyType][enemyKey][
+                                    "Defeats"
+                                ]
+                                > mostKilledBy
+                            ):
+                                mostKilledBy = accountJson["Data"]["Journal"][
+                                    enemyType
+                                ][enemyKey]["Defeats"]
+                                nemesis = enemyKey
+
+                            totalKills += accountJson["Data"]["Journal"][enemyType][
+                                enemyKey
+                            ]["Kills"]
+
+                    # Make Playcount List
+                    list = ""
+                    for characterName in accountJson["Data"]["CharacterPlayCount"]:
+                        count = accountJson["Data"]["CharacterPlayCount"][characterName]
+                        list = list + f"• {characterName} - {count:,}\n"
+
+                    title = f"Account Information for {member.name}"
+                    desc = f"""**Featured Character:** {character}
+                            Level: {characterJson["Data"]["CurrentLevel"]}
+                            HP: {characterJson["Data"]["HP"]:,}
+                            Damage: {characterJson["Data"]["Damage"]:,}
+                            Defense: {math.floor((characterJson["Data"]["Defense"] * 100) + 0.5)}%
+                            Stamina: {characterJson["Data"]["Stamina"]:,}
+                            Critical: {characterJson["Data"]["Crit"]:,}
+                            Sturdiness: {characterJson["Data"]["CritDef"]:,}
+                            Mastery Level: {characterJson["Data"]["MasteryLevel"]}
+
+                            **Fun Stats:**
+                            Hours Played: {math.floor((accountJson["Data"]["TotalHours"] / 3600) + 0.5):,}
+                            Highest Combo: {accountJson["Data"]["HighestCombo"]:,}
+                            Highest Damage: {accountJson["Data"]["HighestDamage"]:,}
+                            Bosses Defeated: {accountJson["Data"]["BossesKilled"]:,}
+                            Total Kills: {totalKills:,}
+                            Nemesis: {nemesis}
+
+                            **Play Count:**
+                            {list}
+                            """
+
+                    updated_difference = time.time() - characterJson["updated"]
+                    updated_text = ""
+
+                    if updated_difference <= 10:
+                        updated_text = "Last updated a few seconds ago."
+                    elif updated_difference <= 30:
+                        updated_text = (
+                            f"Last updated {round(updated_difference)} seconds ago."
                         )
-                        return
-
-                    if ac_status == 200 and ch_status == 200:
-                        accountJson = accountData.json()
-                        characterJson = characterData.json()
-
-                        # Determine Nemesis by seeing which enemy they got killed the most!
-                        nemesis = "None"
-                        kills = 0
-                        iterateOverEnemyTypes = ["Mobs", "Bosses"]
-
-                        for enemyType in iterateOverEnemyTypes:
-                            for enemyKey in accountJson["Data"]["Journal"][enemyType]:
-                                if (
-                                    accountJson["Data"]["Journal"][enemyType][enemyKey][
-                                        "Defeats"
-                                    ]
-                                    > kills
-                                ):
-                                    kills = accountJson["Data"]["Journal"][enemyType][
-                                        enemyKey
-                                    ]["Defeats"]
-                                    nemesis = enemyKey
-
-                        # Make Playcount List
-                        list = ""
-                        for characterName in accountJson["Data"]["CharacterPlayCount"]:
-                            count = accountJson["Data"]["CharacterPlayCount"][
-                                characterName
-                            ]
-                            list = list + f"• {characterName} - {count:,}\n"
-
-                        title = f"Account Information for {member.name}"
-                        desc = f"""**Featured Character:** {character}
-                                Level: {characterJson["Data"]["CurrentLevel"]}
-                                HP: {characterJson["Data"]["HP"]:,}
-                                Damage: {characterJson["Data"]["Damage"]:,}
-                                Defense: {math.floor((characterJson["Data"]["Defense"] * 100) + 0.5)}%
-                                Stamina: {characterJson["Data"]["Stamina"]:,}
-                                Critical: {characterJson["Data"]["Crit"]:,}
-                                Sturdiness: {characterJson["Data"]["CritDef"]:,}
-                                Mastery Level: {characterJson["Data"]["MasteryLevel"]}
-
-                                **Fun Stats:**
-                                Hours Played: {math.floor((accountJson["Data"]["TotalHours"] / 3600) + 0.5):,}
-                                Highest Combo: {accountJson["Data"]["HighestCombo"]:,}
-                                Highest Damage: {accountJson["Data"]["HighestDamage"]:,}
-                                Bosses Killed: {accountJson["Data"]["BossesKilled"]:,}
-                                Nemesis: {nemesis}
-
-                                **Play Count:**
-                                {list}
-                                """
-
-                        embedObj = discord.Embed(
-                            title=title, description=desc, colour=0x5387B8
-                        )
-
-                        imageFile = discord.File(
-                            f"./img/classes/{character}.png",
-                            filename=f"{character}.png",
-                        )
-                        embedObj.set_image(url=f"attachment://{character}.png")
-                        embedObj.set_footer(
-                            text="These changes do not update live. Base stats only shown."
-                        )
-
-                        await interaction.response.send_message(
-                            file=imageFile, embed=embedObj
-                        )
+                    elif updated_difference <= 60:
+                        updated_text = "Last updated a minute ago."
+                    elif updated_difference <= 1800:
+                        updated_text = f"Last updated {round(updated_difference / 60)} minutes ago."
                     else:
-                        await interaction.response.send_message(
-                            "{} Character does not exist. Please make sure you have typed the right character name (case sensitive!) and try again in a minute.".format(
-                                interaction.user.mention
-                            )
-                        )
+                        updated_text = "Last updated a while ago."
+
+                    embedObj = discord.Embed(
+                        title=title, description=desc, colour=0x5387B8
+                    )
+
+                    imageFile = discord.File(
+                        f"./img/classes/{character}.png",
+                        filename=f"{character}.png",
+                    )
+                    embedObj.set_image(url=f"attachment://{character}.png")
+                    embedObj.set_footer(text=f"{updated_text} Base stats only shown.")
+
+                    await interaction.response.send_message(
+                        file=imageFile, embed=embedObj
+                    )
                 else:
                     await interaction.response.send_message(
                         "{} You do not have a Roblox profile set! Please re-verify before using this command.".format(
@@ -226,6 +292,28 @@ class Datastore(Cog):
     @Cog.listener()
     async def on_ready(self):
         if not self.bot.ready:
+            # Delete all temporary json files
+            try:
+                shutil.rmtree("./data/temp")
+                print("Deleted temporary directory.")
+            except OSError as e:
+                print(f"Error deleting temporary files: {e}")
+
+            # Create new temporary directory
+            pathlib.Path("./data/temp/Account_ProfileStore_Suffix_7").mkdir(
+                parents=True, exist_ok=True
+            )
+            pathlib.Path("./data/temp/Character_ProfileStore_Suffix_7").mkdir(
+                parents=True, exist_ok=True
+            )
+
+            self.bot.scheduler.add_job(
+                self.expire_old_data,
+                CronTrigger(
+                    minute="1,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,59"
+                ),
+            )
+
             self.bot.ready_cogs.ready("datastore")
 
 
