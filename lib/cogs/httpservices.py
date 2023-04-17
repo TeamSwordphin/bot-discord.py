@@ -11,6 +11,7 @@ from ..modules.discord import discordhelper
 app = Quart(__name__)
 state = str(uuid.uuid4().hex)
 
+
 # Bot messages are enabled here. Mainly to send Save data edits to discord
 @app.route("/", methods=["POST"])
 async def index():
@@ -37,6 +38,50 @@ async def index():
         return "0"
 
 
+# A Discord Webhook to publish to the discord server
+@app.route("/webhook-gdpr-althea", methods=["POST"])
+async def webhook_gdpr():
+    data = await request.get_json()
+
+    if data:
+        channel = await app.bot.fetch_channel(731585412363059231)
+        titleRule = "Roblox Payload Received"
+        descRule = f"""Roblox has sent a webhook payload: 
+        
+        **Event Type:** {data["EventType"]}
+        **Event Time:** {data["EventTime"]}
+        **UserID:** {data["EventPayload"]["UserId"]}
+        """
+
+        # Initial Embed message
+        if data["EventType"] == "SampleNotification":
+            descRule = f"""{descRule}
+            
+            This is a sample notification payload sent by Roblox as a test. No action is required on your part.
+            """
+        elif data["EventType"] == "RightToErasureRequest":
+            descRule = f"""{descRule}
+
+            1. Please use the command /verifydiscord to ensure that this User is not in this Discord Server
+            2. Please remove this UserId from the following games:
+            """
+
+        await channel.send(
+            embed=discord.Embed(title=titleRule, description=descRule, colour=0x5387B8)
+        )
+
+        # Information that needs to be sent after the Embed
+        if data["EventType"] == "RightToErasureRequest":
+            for gameId in data["EventPayload"]["GameIds"]:
+                await channel.send(f"https://www.roblox.com/games/{gameId}/")
+
+        # Ping the required roles for this
+        await channel.send("<@&568307956186218496> <@&1037516919621816450>")
+
+    return data
+
+
+# A redirect URL for Discord Verification
 @app.route("/love", methods=["POST", "GET"])
 async def verified_role():
     res = await make_response()
@@ -105,20 +150,14 @@ class HttpServices(Cog):
     # Given a Discord UserId, push static make-believe data to the Discord
     # metadata endpoint.
     async def update_metadata(self, user_id):
-        print(1)
-
         # Fetch the Discord tokens from storage
         data = db.record(
             "SELECT Token, Expires, RefreshToken, Scope, TokenType FROM oauth WHERE UserId = ?",
             user_id,
         )
 
-        print(2)
-
         if data == None:
             return
-
-        print(3)
 
         # Reconstruct the token data of a user
         token, expires, refresh_token, scope, token_type = data

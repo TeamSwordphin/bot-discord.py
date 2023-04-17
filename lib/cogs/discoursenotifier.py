@@ -4,8 +4,8 @@ from apscheduler.triggers.cron import CronTrigger
 from bs4 import BeautifulSoup
 from discord.ext.commands import Cog, command
 
-TEXT_CHANNELS_TO_SEND = [410596428348391445, 410995977688842240]
-LINK = "https://devforum.roblox.com/t/pwned-3-update-notes/943110"
+TEXT_CHANNELS_TO_SEND = [410596271057797131]
+LINK = "https://devforum.roblox.com/t/pwned-3-update-notes/943110/2"
 LINK_JSON = f"{LINK}.json"
 
 
@@ -67,7 +67,7 @@ class Notifier(Cog):
             response_json = response.json()
             return response_json["post_stream"]["posts"][0]["updated_at"], response_json
         else:
-            # 	print("Response returned 403.")
+            #    print("Response returned 403.")
             return None, None
 
     async def check_post(self):
@@ -89,12 +89,12 @@ class Notifier(Cog):
             if last_updated != None:
                 self.last_updated = last_updated
 
-            self.bot.scheduler.add_job(
-                self.check_post,
-                CronTrigger(
-                    minute="3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,59"
-                ),
-            )
+            # self.bot.scheduler.add_job(
+            #    self.check_post,
+            #    CronTrigger(
+            #        minute="3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,59"
+            #    ),
+            # )
 
             self.bot.ready_cogs.ready("discoursenotifier")
 
