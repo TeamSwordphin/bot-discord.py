@@ -1,3 +1,6 @@
+import base64
+import hashlib
+import hmac
 import math
 import uuid
 
@@ -42,43 +45,61 @@ async def index():
 @app.route("/webhook-gdpr-althea", methods=["POST"])
 async def webhook_gdpr():
     data = await request.get_json()
+    json_string = await request.get_data()
+    json_string = json_string.decode()
 
-    if data:
-        channel = await app.bot.fetch_channel(731585412363059231)
-        titleRule = "Roblox Payload Received"
-        descRule = f"""Roblox has sent a webhook payload: 
-        
-        **Event Type:** {data["EventType"]}
-        **Event Time:** {data["EventTime"]}
-        **UserID:** {data["EventPayload"]["UserId"]}
-        """
+    header = request.headers.get("roblox-signature")
+    properties = header.split(",")
+    timestamp = properties[0].split("t=", 1)[1]
+    given_signature = properties[1].split("v1=", 1)[1]
 
-        # Initial Embed message
-        if data["EventType"] == "SampleNotification":
-            descRule = f"""{descRule}
+    secret = app.webhook_secret
+    message = f"{timestamp}.{json_string}"
+    hash = hmac.new(secret.encode(), message.encode(), hashlib.sha256)
+
+    expected_signature = base64.b64encode(hash.digest()).decode()
+
+    if given_signature == expected_signature:
+        if data:
+            channel = await app.bot.fetch_channel(731585412363059231)
+            titleRule = "Roblox Payload Received"
+            descRule = f"""Roblox has sent a webhook payload: 
             
-            This is a sample notification payload sent by Roblox as a test. No action is required on your part.
-            """
-        elif data["EventType"] == "RightToErasureRequest":
-            descRule = f"""{descRule}
-
-            1. Please use the command /verifydiscord to ensure that this User is not in this Discord Server
-            2. Please remove this UserId from the following games:
+            **Event Type:** {data["EventType"]}
+            **Event Time:** {data["EventTime"]}
+            **UserID:** {data["EventPayload"]["UserId"]}
             """
 
-        await channel.send(
-            embed=discord.Embed(title=titleRule, description=descRule, colour=0x5387B8)
-        )
+            # Initial Embed message
+            if data["EventType"] == "SampleNotification":
+                descRule = f"""{descRule}
+                
+                This is a sample notification payload sent by Roblox as a test. No action is required on your part.
+                """
+            elif data["EventType"] == "RightToErasureRequest":
+                descRule = f"""{descRule}
 
-        # Information that needs to be sent after the Embed
-        if data["EventType"] == "RightToErasureRequest":
-            for gameId in data["EventPayload"]["GameIds"]:
-                await channel.send(f"https://www.roblox.com/games/{gameId}/")
+                1. Please use the command /verifydiscord to ensure that this User is not in this Discord Server
+                2. Please remove this UserId from the following games:
+                """
 
-        # Ping the required roles for this
-        await channel.send("<@&568307956186218496> <@&1037516919621816450>")
+            await channel.send(
+                embed=discord.Embed(
+                    title=titleRule, description=descRule, colour=0x5387B8
+                )
+            )
 
-    return data
+            # Information that needs to be sent after the Embed
+            if data["EventType"] == "RightToErasureRequest":
+                for gameId in data["EventPayload"]["GameIds"]:
+                    await channel.send(f"https://www.roblox.com/games/{gameId}/")
+
+            # Ping the required roles for this
+            await channel.send("<@&568307956186218496> <@&1037516919621816450>")
+
+            return data
+
+    return "Wrong Signature"
 
 
 # A redirect URL for Discord Verification
@@ -146,6 +167,9 @@ async def discord_oauth_callback():
 class HttpServices(Cog):
     def __init__(self, bot):
         self.bot = bot
+
+        with open("./lib/bot/webhook_secret.0", "r", encoding="utf-8") as tokenFile:
+            self.webhook_secret = tokenFile.read()
 
     # Given a Discord UserId, push static make-believe data to the Discord
     # metadata endpoint.
@@ -251,6 +275,7 @@ class HttpServices(Cog):
         if not self.bot.ready:
             self.guild = self.bot.guild
             app.bot = self.bot
+            app.webhook_secret = self.webhook_secret
             app.update_metadata = self.update_metadata
             self.bot.loop.create_task(app.run_task(host="0.0.0.0", port=5000))
             self.bot.ready_cogs.ready("httpservices")
