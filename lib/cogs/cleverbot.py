@@ -1,8 +1,10 @@
+import os
 import random
+import time
 
 import cleverbot
+import discord
 from discord.ext.commands import Cog
-from discord.utils import get
 
 REACTIONS = [
     597270319736291347,
@@ -26,6 +28,7 @@ REACTIONS = [
 class Cleverbot(Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.last_time_since_video_was_sent = 0
 
         with open("./lib/bot/cleverbot.0", "r", encoding="utf-8") as tokenFile:
             self.conversation = cleverbot.Cleverbot(tokenFile.read(), timeout=60)
@@ -41,10 +44,13 @@ class Cleverbot(Cog):
         if not message.author.bot:
             if self.bot.user in message.mentions:
                 command = message.content.split()
+
                 if len(command) > 1:
                     async with message.channel.typing():
                         command.pop(0)
+
                         newStr = " ".join(command)
+
                         try:
                             reply = self.conversation.say(newStr)
                         except cleverbot.CleverbotError as error:
@@ -54,10 +60,34 @@ class Cleverbot(Cog):
                         finally:
                             self.conversation.close()
                 else:
+                    # Reply with a random emoji!
                     randomReaction = random.choice(REACTIONS)
                     emoji = self.bot.get_emoji(randomReaction)
+
                     if emoji:
                         await message.add_reaction(emoji)
+
+                    # Then send a video!
+                    current_time = time.time()
+
+                    if (current_time - self.last_time_since_video_was_sent) >= 600:
+                        self.last_time_since_video_was_sent = current_time
+
+                        base_dir = "./video"
+                        video_path_random = random.choice(
+                            [
+                                x
+                                for x in os.listdir(base_dir)
+                                if os.path.isfile(os.path.join(base_dir, x))
+                            ]
+                        )
+
+                        if video_path_random:
+                            await message.reply(
+                                file=discord.File(
+                                    os.path.join(base_dir, video_path_random)
+                                )
+                            )
 
 
 async def setup(bot):
