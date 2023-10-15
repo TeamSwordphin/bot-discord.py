@@ -47,6 +47,7 @@ class RegisterMetadata(Cog):
             self.client_id = tokenFile.read()
 
     @app_commands.command(name="sendmetadata", description="Sends metadata to Discord.")
+    @app_commands.guild_only()
     async def sendmetadata(self, interaction: discord.Interaction) -> None:
         await interaction.response.send_message(
             f"Metadata was already sent! {interaction.user.mention}!"

@@ -1,36 +1,39 @@
-from typing import Optional
-
 import discord
-from discord.ext.commands import Cog, command
-from discord.utils import get
+from discord import TextChannel, app_commands
+from discord.ext.commands import Cog
 
 
 class SayEmbed(Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @command(name="sayembed", hidden=True)
+    @app_commands.command(
+        name="sayembed",
+        description="Sends the following Embed message to a channel.",
+    )
+    @app_commands.describe(
+        channel="The channel to send this message in.", message="The message to send."
+    )
+    @app_commands.guild_only()
     async def say_embed_message(
         self,
-        ctx,
-        channelId: str = "",
-        *,
-        message: Optional[str] = "No message was given."
+        interaction: discord.Interaction,
+        channel: TextChannel,
+        message: str,
     ):
-        channel_to_send = await self.bot.fetch_channel(int(channelId))
+        if channel:
+            embedObj = discord.Embed(
+                title="Notice from Team Swordphin", description=message, colour=0x5387B8
+            )
+            embedObj.set_image(url="https://i.imgur.com/JO4qyV8.png")
+            embedObj.set_footer(
+                text="These rules are subject to change. Developers and moderators have the right to moderate users for any activity that is considered to violate these rules. Punishments are discretionary (up to the moderator acting) and will often apply according to the situation's severity."
+            )
 
-        if channel_to_send:
-            role = get(self.bot.guild.roles, name="Support Developers")  # Get the role
-
-            if role in ctx.author.roles:
-                await channel_to_send.send(
-                    embed=discord.Embed(
-                        title="Notice from Team Swordphin",
-                        description=message,
-                        colour=0x5387B8,
-                    )
-                )
-                await ctx.message.delete()
+            await channel.send(embed=embedObj)
+            await interaction.response.send_message(
+                f"Sent the embed! {interaction.user.mention}!"
+            )
 
     @Cog.listener()
     async def on_ready(self):

@@ -149,6 +149,7 @@ class Datastore(Cog):
             app_commands.Choice(name="Stella", value="Stella"),
         ]
     )
+    @app_commands.guild_only()
     async def show_character_profile(
         self,
         interaction: discord.Interaction,

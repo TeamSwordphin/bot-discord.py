@@ -1,4 +1,5 @@
 import discord
+from discord import app_commands
 from discord.ext.commands import Cog, command
 from discord.utils import get
 
@@ -9,7 +10,7 @@ class RuleMaker(Cog):
 
     @command(name="newrules", aliases=["ruleupdate"], hidden=True)
     async def new_rule_notifier(self, ctx, channelId: str = ""):
-        roleSup = get(self.bot.guild.roles, name="Support Developers")
+        roleSup = get(self.bot.guild.roles, name="Developers")
 
         if roleSup in ctx.author.roles:
             channel = await self.bot.fetch_channel(int(channelId))
@@ -30,11 +31,15 @@ class RuleMaker(Cog):
 
             await channel.send(embed=embedObj)
 
-    @command(name="postrules", aliases=["rules"], hidden=True)
-    async def say_rules(self, ctx):
-        roleSup = get(self.bot.guild.roles, name="Support Developers")
+    @app_commands.command(
+        name="postruleedits",
+        description="Edits the hard-coded rules of this discord.",
+    )
+    @app_commands.guild_only()
+    async def say_rules(self, interaction: discord.Interaction):
+        roleSup = get(self.bot.guild.roles, name="Developers")
 
-        if roleSup in ctx.author.roles:
+        if roleSup in interaction.user.roles:
             # Call this function every time we need to update the rules.
             channel = await self.bot.fetch_channel(311200318895423499)
             messageBan = await channel.fetch_message(921241612238094427)
@@ -55,26 +60,29 @@ class RuleMaker(Cog):
             await messageBan.edit(embed=embedObjLink)
 
             titleRule = "Server Rules"
-            descRule = """**1. Be respectful.**
+            descRule = """**Be respectful.**
 						Encourage meaningful discussion. Discussions, debates and media should remain respectful, civil, on topic and all-ages-appropriate. Don't bring outside issues to the Discord.
 						
-						**2. Keep content and discussions within the appropriate channels.**
+						**Keep content and discussions within the appropriate channels.**
 						Avoid going off-topic. Please stick to the channel topic you are currently in. Any help questions must be kept in #help-questions. If you are in a voice channel, all text conversations and content must be kept in #mute-vc-club. Do not use any channels in contributions-&-bugs for casual conversations.
 
-						**3. Avoid spamming and flooding chat.**
+						**Avoid spamming and flooding chat.**
 						This includes shit posting, image/emoji spam, being obnoxious in voice calls, using AltheaBot in the wrong channels, and advertising other Discords.
 
-						**4. Do not discuss topics that directly violate Roblox's Community Guidelines.**
+						**Do not discuss topics that directly violate Roblox's Community Guidelines.**
 						This is a Roblox server. NSFW and derogatory words/slurs are prohibited and will be met with an instant ban. If you are unsure if something is NSFW or not, don't post it. Clarify with a moderator or Community Manager beforehand.
 
-						**5. Name should be mentionable (using the @ symbol).**
-						Self-explanatory. You will be kicked if names aren't easily mentionable.
+						**Name should be mentionable (using the @ symbol).**
+                        Self-explanatory. You will be kicked if names aren't easily mentionable.
 
-						**6. Avoid bypassing the filter.** 
+						**Avoid bypassing the filter.** 
 						We use Discord's built-in automod feature to filter out controversial/inappropriate words and slurs. It's not intrusive for the most part, so follow this filter, and do not work around it.
 						
-						**7. Do not evade punishments.**
+						**Do not evade punishments.**
 						Evading punishments in any way will result in a harsher punishment.
+
+                        **Avoid posting appeals or posts made on behalf or about banned members.**
+                        The banned member (both Discord and in-game) must go through the official communication channels (Community Manager, Moderators, or Dyno upon being banned) for appealing. We will not accept appeals done or asked by users who are not the original banned member. Talking about banned members, posting content or sharing posts made by banned members will also not be tolerated. This is to prevent members from acting as a "messenger" for banned users.
 						"""
 
             embedObj = discord.Embed(
@@ -86,6 +94,9 @@ class RuleMaker(Cog):
             )
 
             await messageRules.edit(embed=embedObj)
+            await interaction.response.send_message(
+                f"Edited the rules messages! {interaction.user.mention}!"
+            )
 
     @Cog.listener()
     async def on_ready(self):

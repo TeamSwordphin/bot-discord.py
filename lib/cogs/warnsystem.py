@@ -39,7 +39,7 @@ class Warn(Cog):
     ) -> None:
         if member != None:
             roleMod = get(self.bot.guild.roles, name="Moderator")  # Get the role
-            roleSup = get(self.bot.guild.roles, name="Support Developers")
+            roleSup = get(self.bot.guild.roles, name="Developers")
 
             if roleMod in interaction.user.roles or roleSup in interaction.user.roles:
                 db.execute(
@@ -60,12 +60,13 @@ class Warn(Cog):
         description="Shows a list of all strikes a user has collected.",
     )
     @app_commands.describe(member="The member to see their strikes.")
+    @app_commands.guild_only()
     async def get_warnings(
         self, interaction: discord.Interaction, member: Member
     ) -> None:
         if member != None:
             roleMod = get(self.bot.guild.roles, name="Moderator")  # Get the role
-            roleSup = get(self.bot.guild.roles, name="Support Developers")
+            roleSup = get(self.bot.guild.roles, name="Developers")
 
             if roleMod in interaction.user.roles or roleSup in interaction.user.roles:
                 reasons = db.records(
@@ -93,12 +94,13 @@ class Warn(Cog):
         description="Purges all strikes accumulated on a chosen user.",
     )
     @app_commands.describe(member="The member to reset the strikes for.")
+    @app_commands.guild_only()
     async def reset_strikes(
         self, interaction: discord.Interaction, member: Member
     ) -> None:
         if member != None:
             roleMod = get(self.bot.guild.roles, name="Moderator")  # Get the role
-            roleSup = get(self.bot.guild.roles, name="Support Developers")
+            roleSup = get(self.bot.guild.roles, name="Developers")
 
             if roleMod in interaction.user.roles or roleSup in interaction.user.roles:
                 db.execute("DELETE FROM warnlog WHERE UserID = ?", member.id)

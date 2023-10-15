@@ -137,11 +137,12 @@ class XP(Cog):
         member="The member to set the xp for.",
         exp="The EXP that this user will be set to.",
     )
+    @app_commands.guild_only()
     async def addexp(
         self, interaction: discord.Interaction, member: Member, exp: str
     ) -> None:
         if member != None:
-            role = get(self.bot.guild.roles, name="Support Developers")  # Get the role
+            role = get(self.bot.guild.roles, name="Developers")  # Get the role
             if role in interaction.user.roles:
                 amount = int(exp)
                 new_lvl = adjust_lvl(amount)

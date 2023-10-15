@@ -51,6 +51,7 @@ class Verification(Cog):
         description="Begin the verification process.",
     )
     @app_commands.describe(userid="Your Roblox User Id to use for verification.")
+    @app_commands.guild_only()
     async def say_verification(
         self, interaction: discord.Interaction, userid: str
     ) -> None:
@@ -168,12 +169,13 @@ class Verification(Cog):
         member="The member to set.",
         userid="Your Roblox User Id to use for verification.",
     )
+    @app_commands.guild_only()
     async def set_roblox_profile(
         self, interaction: discord.Interaction, member: Member, userid: str
     ) -> None:
         if member != None:
             roleMod = get(self.bot.guild.roles, name="Moderator")  # Get the role
-            roleSup = get(self.bot.guild.roles, name="Support Developers")
+            roleSup = get(self.bot.guild.roles, name="Developers")
 
             if roleMod in interaction.user.roles or roleSup in interaction.user.roles:
                 json = await self.get_json(
@@ -223,6 +225,7 @@ class Verification(Cog):
     @app_commands.describe(
         robloxuserid="The Roblox User Id to be used for verification.",
     )
+    @app_commands.guild_only()
     async def verify_discord_profile_from_userid(
         self, interaction: discord.Interaction, robloxuserid: str
     ) -> None:
@@ -246,6 +249,7 @@ class Verification(Cog):
         description="Verify a member's Roblox Profile.",
     )
     @app_commands.describe(member="The member to verify.")
+    @app_commands.guild_only()
     async def verify_roblox_profile(
         self, interaction: discord.Interaction, member: Member
     ) -> None:
@@ -268,14 +272,17 @@ class Verification(Cog):
         name="gettesters",
         description="Returns a list of all current P3 Testers.",
     )
+    @app_commands.guild_only()
     async def getuser(self, interaction: discord.Interaction) -> None:
-        roleSup = get(self.bot.guild.roles, name="Support Developers")
+        roleSup = get(self.bot.guild.roles, name="Developers")
+
         if roleSup in interaction.user.roles:
             empty = True
             roleTester = get(self.bot.guild.roles, name="Cubicle Office Worker")
+            list = ""
 
             # Get all objects, and combine them into a bulletpointed list
-            list = ""
+
             for member in self.bot.guild.members:
                 if roleTester in member.roles:
                     link = db.record(

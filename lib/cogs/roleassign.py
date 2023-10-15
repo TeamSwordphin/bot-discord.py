@@ -13,7 +13,7 @@ class RoleAssign(Cog):
 
     @command(name="editMessage", aliases=["edit"])
     async def edit_role_messages(self, ctx, channelId: str = ""):
-        roleSup = get(self.bot.guild.roles, name="Support Developers")
+        roleSup = get(self.bot.guild.roles, name="Developers")
 
         if roleSup in ctx.author.roles:
             channel = await self.bot.fetch_channel(int(channelId))
@@ -55,6 +55,7 @@ class RoleAssign(Cog):
     @app_commands.describe(
         channel="The channel to send it to.",
     )
+    @app_commands.guild_only()
     async def post_linked_role(
         self, interaction: discord.Interaction, channel: TextChannel
     ) -> None:

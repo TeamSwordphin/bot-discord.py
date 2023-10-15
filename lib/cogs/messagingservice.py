@@ -60,6 +60,7 @@ class MessagingService(Cog):
             app_commands.Choice(name="Off", value="True"),
         ],
     )
+    @app_commands.guild_only()
     async def shopkeep(
         self,
         interaction: discord.Interaction,
